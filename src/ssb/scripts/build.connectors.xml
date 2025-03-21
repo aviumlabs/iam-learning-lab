@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="services.standard.build.buildConnectors">
+    <!-- targets responsible for taking custom java connectors and compiling them into a connector.jar
+         Author: Keith Smith 2023
+      -->
+  <target name="buildConnector">
+    <!-- We need a name for the connector so we'll use the folder it's located in -->
+    <basename property="connectorName" file="${connectorHomeDir}"/>
+    <property name="connectorBuild" location="${connectorBuildDir}/${connectorName}" />
+    <property name="connectorLib" location="${connectorBuild}/lib" />
+    <property name="connectorClasses" location="${connectorBuild}/classes" />
+    <property name="connectorDist" location="${connectorBuild}/dist" />
+
+    <echo message="Applying Custom Connector ${connectorName} to build"/>
+
+    <if>
+      <available file="${connectorSrc}/${connectorName}/manifest.xml"/>
+      <then>
+        <echo>Found a manifest.xml file for ${connectorName}</echo>
+        <if>
+          <available file="${connectorSrc}/${connectorName}/install/Configuration" type="dir"/>
+          <!-- An alternative to putting the Configuration-ConnectorRegistry.xml file in the config folder
+               is to just add it to the install folder.  The file should be named Configuration-ConnectorRegistry-ConnectorName.xml
+               or just ConnectorRegistry-ConnectorName.xml
+            -->
+          <then>
+            <fileset dir="${connectorSrc}/${connectorName}/install/Configuration" includes="**/*.xml" id="configurationpresent"/>
+            <if>
+              <not>
+                <equals arg1="${toString:configurationpresent}" arg2=""/>
+              </not>
+              <then>
+                <mkdir dir="${build.iiqBinaryExtract}/WEB-INF/config/custom/Configuration"/>
+                <echo message="Adding Connector Registry file to ${build.iiqBinaryExtract}/WEB-INF/config/custom/Configuration"/>
+                <copy todir="${build.iiqBinaryExtract}/WEB-INF/config/custom/Configuration">
+                  <fileset dir="${connectorSrc}/${connectorName}/install/Configuration">
+                    <include name="*.xml" />
+                  </fileset>
+                </copy>
+              </then>
+            </if>
+          </then>
+        </if>
+        <if>
+          <available file="${connectorSrc}/${connectorName}/define/applications" type="dir"/>
+          <!-- An alternative to putting the Connector xhtml file web/define/applications folder
+               is to just add it to the define/applications folder.
+            -->
+          <then>
+            <fileset dir="${connectorSrc}/${connectorName}/define/applications" includes="**/*.xhtml" id="xhtmlpresent"/>
+            <if>
+              <not>
+                <equals arg1="${toString:xhtmlpresent}" arg2=""/>
+              </not>
+              <then>
+                <mkdir dir="${build.iiqBinaryExtract}/define/applications"/>
+                <echo message="Adding XHTML file to ${build.iiqBinaryExtract}/define/applications"/>
+                <copy todir="${build.iiqBinaryExtract}/define/applications">
+                  <fileset dir="${connectorSrc}/${connectorName}/define/applications">
+                    <include name="*.xhtml" />
+                  </fileset>
+                </copy>
+              </then>
+            </if>
+          </then>
+        </if>
+        <if>
+          <available file="${connectorSrc}/${connectorName}/src" type="dir"/>
+          <then>
+            <fileset dir="${connectorSrc}/${connectorName}/src" includes="**/*.java" id="javapresent"/> 
+            <if>
+              <not>
+                <equals arg1="${toString:javapresent}" arg2=""/>
+              </not>
+              <then>
+                <mkdir dir="${connectorClasses}"/>
+                  <javac srcdir="${connectorSrc}/${connectorName}/src" destdir="${connectorClasses}"
+                    debug="true" debuglevel="lines,vars,source"
+                    includeantruntime="false" source="1.8" target="1.8">
+                    <classpath>
+                      <pathelement path="${build.iiqBinaryExtract}/WEB-INF/classes"/>
+                      <fileset dir="${build.iiqBinaryExtract}/WEB-INF/lib">
+                        <include name="*.jar"/>
+                      </fileset>
+                      <fileset dir="${build.iiqBinaryExtract}/WEB-INF/lib-connectors">
+                        <include name="*.jar"/>
+                      </fileset>
+                    </classpath>
+                    <compilerarg value="-Xlint:deprecation" />
+                    <compilerarg value="-Xlint:unchecked" />
+                  </javac>
+
+                  <echo message="Adding to ${connectorLib}/${connectorName}.jar"/>
+                  <mkdir dir="${connectorLib}" />
+                  <jar destfile="${connectorLib}/${connectorName}.jar">
+                    <fileset dir="${connectorClasses}">
+                      <include name="**/*" />
+                    </fileset>
+                  </jar>
+                  <echo message="Copying from ${connectorLib} to ${connectorInstall}"/>
+                  <copy todir="${connectorInstall}">
+                    <fileset dir="${connectorLib}">
+                      <include name="*.jar" />
+                    </fileset>
+                  </copy>
+                  <echo message="Editing Mapping file ${connectorInstall}/connectorVsConnectorBundleMapping.json"/>
+                  <script language="beanshell" manager="bsf" setbeans="true">
+                  <classpath>
+                    <fileset dir="connectorsrc/lib" includes="*.jar"/>
+                    <fileset dir="lib" includes="*.jar"/>
+                    <fileset dir="build/extract/WEB-INF/lib" includes="*.jar"/>
+                  </classpath>
+                  <![CDATA[
+                  import java.util.Map;
+                  import org.apache.commons.logging.LogFactory;
+                  import org.apache.commons.logging.Log;
+                  import sailpoint.tools.JsonHelper;
+                  import java.io.File;
+                  import java.io.FileNotFoundException;
+                  import java.io.FileReader;
+                  import java.io.Writer;
+                  import java.io.IOException;
+                  import java.util.Iterator;
+                  import java.util.List;
+                  import java.util.ArrayList;
+                  import org.json.simple.JSONArray;
+                  import org.json.simple.JSONObject;
+                  import org.json.simple.parser.JSONParser;
+                  import org.json.simple.parser.ParseException;
+                  import javax.xml.parsers.DocumentBuilderFactory;
+                  import javax.xml.parsers.DocumentBuilder;
+                  import org.w3c.dom.Document;
+                  import org.w3c.dom.NodeList;
+                  import org.w3c.dom.Node;
+                  import org.w3c.dom.NamedNodeMap;
+                  import org.w3c.dom.Element;
+                  /**
+                   * Code to support mapping the manifest.xml
+                   * @author K. Smith, 2023
+                   */
+                  String mapFilename="connectorVsConnectorBundleMapping.json";
+                  Log logger=LogFactory.getLog("build.connectors");
+                  logger.debug("Editing Mapping file");
+                  /**
+                  try {
+                    for (int i=0; i < this.variables.length; i++) {
+                      String name=this.variables[i];
+                      if("transient".equals(name)) {
+                        continue;
+                      }
+                      Object value=eval(name);
+                      if(value==void) {
+                        logger.error(name+" is void");
+                      }
+                      else if(value==null) {
+                        logger.error(name+" is null");
+                      }
+                      else {
+                        try {
+                          logger.error(name+": "+value.getClass().getName()+" = "+value);
+                        }
+                        catch (Exception ex3) {
+                          logger.error(name+": "+ex3.getClass().getName()+":"+ex3.getMessage());
+                        }
+                      }
+                    }
+                  }
+                  catch (Exception ex1) {
+                    logger.error(ex1.getClass().getName()+":"+ex1.getMessage());
+                  }
+                  */
+                  JSONParser parser=new JSONParser();
+                  JSONObject jsonObject=null;
+                  String jsonFilename=connectorInstall+File.separator+mapFilename;
+                  logger.debug("jsonFilename = "+jsonFilename);
+                  try {
+                    Object parsedobj=parser.parse(new FileReader(jsonFilename));
+                    jsonObject=(JSONObject)parsedobj;
+                    logger.debug("parsedobj is a "+parsedobj.getClass().getName());
+                    logger.debug("parsedobj keys:"+parsedobj.keySet().toString());
+                  }
+                  catch (Exception ex2) {
+                    logger.error(ex2.getClass().getName()+":"+ex2.getMessage());
+                  }
+                  String connectorNamepath="NOT FOUND";
+                  List connectorJarList=new ArrayList();
+                  try {
+                    String manifestFilename=connectorHomeDir+File.separator+"manifest.xml";
+                    logger.debug("Trying to load manifest file "+manifestFilename);
+                    File manifestFile = new File(manifestFilename);
+                    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+                    Document doc = docBuilder.parse(manifestFile);
+                    doc.getDocumentElement().normalize();
+                    //
+                    // The location of the data in the XML is Connector/Attributes/Map
+                    // Find the Connector node
+                    //
+                    NodeList nList = doc.getElementsByTagName("Connector");
+                    for (int connNodeNum = 0; connNodeNum < nList.getLength(); connNodeNum++) {
+                      Node nNode = nList.item(connNodeNum);
+                      String nNodeName=nNode.getNodeName();
+                      logger.debug("Connector Node "+connNodeNum+" name="+nNodeName);
+                      if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                        Element eElement = (Element) nNode;
+                        //
+                        // Inside the Connector node search for the Attributes node
+                        //
+                        NodeList attributesNameList = eElement.getElementsByTagName("Attributes");
+                        for (int attrNodeNum = 0; attrNodeNum < attributesNameList.getLength(); attrNodeNum++) {
+                          Node attrNode = attributesNameList.item(attrNodeNum);
+                          String attrNodeName=attrNode.getNodeName();
+                          logger.debug("Attributes Node "+attrNodeNum+" name="+attrNodeName);
+                          if (attrNode.getNodeType() == Node.ELEMENT_NODE) {
+                            Element attrElement = (Element) attrNode;
+                            //
+                            // Inside the Attributes is a Map
+                            //
+                            NodeList mapNameList = eElement.getElementsByTagName("Map");
+                            for (int mapNodeNum = 0; mapNodeNum < mapNameList.getLength(); mapNodeNum++) {
+                              Node mapNode = mapNameList.item(mapNodeNum);
+                              String mapNodeName=mapNode.getNodeName();
+                              logger.debug("Map Node "+mapNodeNum+" name="+mapNodeName);
+                              if (mapNode.getNodeType() == Node.ELEMENT_NODE) {
+                                Element mapElement = (Element) mapNode;
+                                logger.debug("mapNode is an ELEMENT_NODE");
+                                //
+                                // Now go get all of the entries in the map
+                                //
+                                NodeList mapEntryList = mapElement.getElementsByTagName("entry");
+                                for (int entryNodeNum = 0; entryNodeNum < mapEntryList.getLength(); entryNodeNum++) {
+                                  Node entryNode = mapEntryList.item(entryNodeNum);
+                                  String entryNodeName=entryNode.getNodeName();
+                                  logger.debug("Entry Node "+entryNodeNum+" name="+entryNodeName);
+                                  if (entryNode.getNodeType() == Node.ELEMENT_NODE) {
+                                    Element entryElement = (Element) entryNode;
+                                    logger.debug("entryNode is an ELEMENT_NODE");
+                                    NamedNodeMap mapAttributes=entryElement.getAttributes();
+                                    String eleKey="";
+                                    String eleValue="";
+                                    for(int mc2=0; mc2 < mapAttributes.getLength(); mc2++) {
+                                      logger.debug("attribute number "+mc2);
+                                      Node mapAttr=mapAttributes.item(mc2);
+                                      String attrName=mapAttr.getNodeName();
+                                      String attrValue=mapAttr.getNodeValue();
+                                      logger.debug("got "+attrName+"="+attrValue);
+                                      if("key".equals(attrName)) {
+                                        eleKey=attrValue;
+                                        logger.debug("got key="+eleKey);
+                                      }
+                                      else if("value".equals(attrName)) {
+                                        eleValue=attrValue;
+                                        logger.debug("got value="+eleValue);
+                                      }
+                                    }
+                                    if("connectorName".equals(eleKey)) {
+                                      connectorNamepath=eleValue;
+                                      logger.debug("Grabbed connector name path= "+connectorNamepath);
+                                    }
+                                    else if(eleKey.startsWith("jar")) {
+                                      connectorJarList.add(eleValue);
+                                      logger.debug("Added jar to list: "+eleValue);
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  catch (Exception ex4) {
+                    logger.error(ex4.getClass().getName()+":"+ex4.getMessage());
+                  }
+                  String jarFilename=connectorName+".jar";
+                  if(connectorJarList.isEmpty()) {
+                    connectorJarList.add(jarFilename);
+                  }
+                  if(connectorName.length() > 1) {
+                    String jarList="";
+                    int jarCount=0;
+                    for (Object cj: connectorJarList) {
+                      String cjs=(String)cj;
+                      if(jarCount>0) jarList=jarList+", ";
+                      jarList=jarList+cjs;
+                      jarCount++;
+                    }
+                    jsonObject.put(connectorNamepath,jarList);
+                  }
+                  try {
+                    logger.debug("Writing file back: "+jsonFilename);
+                    String jsonString=jsonObject.toString();
+                    jsonString=jsonString.replace("{","{\n\t").replace("\",","\",\n\t").replace("}","\n}");
+                    Writer out = new FileWriter(jsonFilename);
+                    out.write(jsonString);
+                    out.flush();
+                    out.close();
+                    logger.debug("Finished writing file");
+                  }
+                  catch (Exception ex5) {
+                    logger.error(ex5.getClass().getName()+":"+ex5.getMessage());
+                  }
+                  ]]>
+                  </script>
+              </then>
+              <else>
+                <echo message="Connector ${connectorName} has no java files to compile"/>
+              </else>
+            </if>
+          </then>
+          <else>
+            <echo message="Connector ${connectorName} has no src folder"/>
+          </else>
+        </if>
+      </then>
+      <else>
+        <fail message="Could not find a manifest.xml file for connector ${connectorName}"/>
+      </else>
+    </if>
+
+  </target>
+  <target name="buildConnectors">
+    <property name="connectorSrc" location="connectorsrc"/>
+    <property name="connectorBuildDir" location="${build}/connectors"/>
+      <mkdir dir="${connectorBuildDir}"/>
+      <property name="connectorInstall" location="${build.iiqBinaryExtract}/WEB-INF/lib-connectors"/>
+      <mkdir dir="${connectorInstall}"/> 
+      <echo message="Applying Custom Connectors to build from ${connectorSrc}"/>
+      <antcall inheritall="true" target="cleanConnectorBuildDir"/>
+      <foreach inheritall="true" target="buildConnector" param="connectorHomeDir">
+        <path>
+          <dirset dir="${connectorSrc}" includes="*" excludes="lib"/>
+        </path>
+      </foreach>
+      <!-- have to repeat this since we might have added some files -->
+      <build-init initFile="${build.iiqBinaryExtract}/WEB-INF/config/sp.init-custom.xml">
+        <fileset dir="${build.iiqBinaryExtract}/WEB-INF/config">
+          <include name="custom/**/*.xml"/>
+          <include name="custom/**/*.XML"/>
+          <include name="custom/**/*.jrxml"/>
+          <exclude name="custom/**/*-init.xml"/>
+          <exclude name="custom/**/*.hbm.xml"/>
+          <exclude name="custom/**/cert_*.xml"/>
+          <exclude name="custom/**/template*/*.xml"/>
+          <!-- Do not move over the template xml into the build dir -->
+          <exclude name="custom/**/*Template.xml"/>
+
+          <!-- 
+          Exclude items named in this target's excludes file.
+          each line in the file is treated as an exclusion pattern.
+          for this use here, (and the import stuff only) lines are prefixed with "custom/".
+          see prepareFiles target that uses the same but expects a broader pattern 
+          if you want ignored files to be stripped out import AND copy actions.
+          -->
+          <excludesfile name="${target}.ignorefiles.properties" if="ignorefiles.is.found"/>
+
+          <!-- A.DUNFEE = - CUSTOM EXCLUDE FOR UNIT TEST OBJECTS -->
+          <exclude name="custom/**/Args/**"/>
+          <exclude name="custom/**/*Args*"/>
+        </fileset>
+      </build-init>
+
+    </target>
+
+    <target name="cleanConnectorBuildDir">
+       <delete dir="${connectorBuildDir}"/>
+    </target>
+
+</project>

@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="services.standard.build.plugins.xml">
+  <target name="buildPlugin">
+    <!-- We need a name for the plugin so we'll use the folder it's located in -->
+    <basename property="pluginName" file="${pluginHomeDir}"/>
+
+    <property name="pluginBuild" location="${pluginBuildDir}/${pluginName}"/>
+    <property name="pluginLib" location="${pluginBuild}/lib"/>
+    <property name="pluginClasses" location="${pluginBuild}/classes" />
+    <property name="pluginContents" location="${pluginBuild}/contents" />
+    <property name="pluginDist" location="${pluginBuild}/dist" />
+
+    <property name="pluginManifestDir" location="${pluginSrc}/${pluginName}"/>
+    <property name="pluginSrcDir" location="${pluginSrc}/${pluginName}/src"/>
+    <property name="pluginSqlDir" location="${pluginSrc}/${pluginName}/db"/>
+    <property name="merge.string" value=">>>>>>"/>
+    <property name="errormessage" value="includes an unresolved merge conflict"/>
+
+    <echo message="Applying Custom Plugin ${pluginName} to build"/>
+
+    <if>
+      <available file="${pluginSrc}/${pluginName}/manifest.xml"/>
+      <then>
+        <echo>Found a manifest.xml file for ${pluginName}</echo>
+
+        <fileset id="manifest.failures" dir="${pluginManifestDir}" includes="*.xml">
+          <contains text="${merge.string}"/>
+        </fileset>
+        <fail status="1" message="Manifest file ${errormessage}">
+          <condition>
+            <resourcecount when="greater" count="0" refid="manifest.failures"/>
+          </condition>
+        </fail>
+
+        <if>
+          <available file="${pluginSrc}/${pluginName}/src" type="dir"/>
+          <then>
+
+            <fileset id="java.failures" dir="${pluginSrcDir}" includes="**/*.java">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="Java file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="java.failures"/>
+              </condition>
+            </fail>
+
+            <fileset dir="${pluginSrc}/${pluginName}/src" includes="**/*.java" id="javapresent"/> 
+            <if>
+              <not>
+                <equals arg1="${toString:javapresent}" arg2=""/>
+              </not>
+              <then>
+                <mkdir dir="${pluginClasses}"/>
+                <javac srcdir="${pluginSrc}/${pluginName}/src" destdir="${pluginClasses}"
+                       debug="true" debuglevel="lines,vars,source"
+                       includeantruntime="false" release="8">
+                  <classpath>
+                    <pathelement path="${build.iiqBinaryExtract}/WEB-INF/classes;${build.iiqBinaryExtract}/WEB-INF/classes-connectors"/>
+                    <fileset dir="${build.iiqBinaryExtract}/WEB-INF/lib">
+                      <include name="*.jar"/>
+                    </fileset>
+                    <fileset dir="${build.iiqBinaryExtract}/WEB-INF/lib-connectors">
+                      <include name="*.jar"/>
+                    </fileset>
+                  </classpath>
+                  <compilerarg value="-Xlint:deprecation" />
+                  <compilerarg value="-Xlint:unchecked" />
+                </javac>
+
+                <echo message="Adding to ${pluginLib}/${pluginName}.jar"/>
+                <mkdir dir="${pluginLib}" />
+                <jar destfile="${pluginLib}/${pluginName}.jar">
+                  <fileset dir="${pluginClasses}">
+                    <include name="**/*" />
+                  </fileset>
+                </jar>
+              </then>
+              <else>
+                <echo message="Plugin ${pluginName} has no java files to compile"/>
+              </else>
+            </if>
+          </then>
+          <else>
+            <echo message="Plugin ${pluginName} has no src folder"/>
+          </else>
+        </if>
+
+        <if>
+          <available file="${pluginSrc}/${pluginName}/db" type="dir"/>
+          <then>
+            <fileset id="mysql.failures" dir="${pluginSrc}/${pluginName}/db" includes="**/*.mysql">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="Mysql script file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="mysql.failures"/>
+              </condition>
+            </fail>
+
+            <fileset id="sqlserver.failures" dir="${pluginSrc}/${pluginName}/db" includes="**/*.sqlserver">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="SqlServer script file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="sqlserver.failures"/>
+              </condition>
+            </fail>
+
+            <fileset id="oraclesql.failures" dir="${pluginSrc}/${pluginName}/db" includes="**/*.oracle">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="Oracle script file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="oraclesql.failures"/>
+              </condition>
+            </fail>
+
+            <fileset id="db2sql.failures" dir="${pluginSrc}/${pluginName}/db" includes="**/*.db2">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="DB2 script file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="db2sql.failures"/>
+              </condition>
+            </fail>
+          </then>
+        </if>
+
+        <if>
+          <available file="${pluginSrc}/${pluginName}/import" type="dir"/>
+          <then>
+            <fileset id="import.failures" dir="${pluginSrc}/${pluginName}/import" includes="**/*.xml">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="Import file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="import.failures"/>
+              </condition>
+            </fail>
+          </then>
+        </if>
+
+        <if>
+          <available file="${pluginSrc}/${pluginName}/ui" type="dir"/>
+          <then>
+            <fileset id="html.failures" dir="${pluginSrc}/${pluginName}/ui" includes="**/*.html">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="HTML file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="html.failures"/>
+              </condition>
+            </fail>
+            <fileset id="xhtml.failures" dir="${pluginSrc}/${pluginName}/ui" includes="**/*.xhtml">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="XHTML file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="xhtml.failures"/>
+              </condition>
+            </fail>
+            <fileset id="css.failures" dir="${pluginSrc}/${pluginName}/ui" includes="**/*.css">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="CSS file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="css.failures"/>
+              </condition>
+            </fail>
+            <fileset id="js.failures" dir="${pluginSrc}/${pluginName}/ui" includes="**/*.jss">
+              <contains text="${merge.string}"/>
+            </fileset>
+            <fail status="1" message="Javascript file ${errormessage}">
+              <condition>
+                <resourcecount when="greater" count="0" refid="js.failures"/>
+              </condition>
+            </fail>
+          </then>
+        </if>
+
+        <copy todir="${pluginBuild}">
+          <fileset dir="${pluginSrc}">
+            <include name="lib/*.jar" />
+          </fileset>
+        </copy>
+
+        <mkdir dir="${pluginContents}" />
+        <copy todir="${pluginContents}">
+          <fileset dir="${pluginSrc}/${pluginName}">
+            <include name="manifest.xml" />
+            <include name="db/**" />
+            <include name="import/**" />
+            <include name="lib/*.jar" />
+            <include name="ui/**" />
+          </fileset>
+          <fileset dir="${pluginBuild}">
+            <include name="lib/*.jar" />
+          </fileset>
+        </copy>
+        <mkdir dir="${pluginDist}" />
+        <zip encoding="UTF-8" baseDir="${pluginContents}" destfile="${pluginDist}/${pluginName}.zip">  
+        </zip>
+        <!-- Copy it over to the folder we use for auto-installation of plugins at server start-up -->
+        <copy file="${pluginDist}/${pluginName}.zip" tofile="${pluginInstall}/${pluginName}.zip"/>  
+      </then>
+      <else>
+        <fail message="Could not find a manifest.xml file for plugin ${pluginName}"/>
+      </else>
+    </if>
+  </target>
+
+  <target name="buildPlugins">
+    <property name="pluginBuildDir" location="${build}/plugins"/>
+    <mkdir dir="${pluginBuildDir}"/>
+
+    <property name="pluginInstall" location="${build.iiqBinaryExtract}/WEB-INF/plugins/ssb/install"/>
+    <mkdir dir="${pluginInstall}"/> 
+
+    <echo message="Applying Custom Plugins to build"/>
+    <antcall inheritall="true" target="cleanPluginBuildDir"/>
+    <foreach inheritall="true" target="buildPlugin" param="pluginHomeDir">   
+      <path>
+        <dirset dir="${pluginSrc}" includes="*"/>
+      </path>
+    </foreach>
+  </target>
+
+  <target name="cleanPluginBuildDir">
+    <delete dir="${pluginBuildDir}"/>
+  </target>
+</project>
