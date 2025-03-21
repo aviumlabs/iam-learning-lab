@@ -1,0 +1,8 @@
+# Apple
+.DS_Store
+
+# IdentityIQ IP
+src/ssb/base/ap/*
+src/ssb/base/ga/*
+src/ssb/base/efix/*
+src/ssb/base/patch/*
