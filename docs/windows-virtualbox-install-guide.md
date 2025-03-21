@@ -189,43 +189,50 @@ Get-WindowsUpdate -AcceptAll -Install -AutoReboot
 
 ## Install Packages
 
-The Packages.psm1 PowerShell module will download and install PowerShell 7.5.0, 
-Visual Studio Code 1.98.0, and it will install and configure OpenSSH.
+The Packages.psm1 PowerShell module supports the installation and 
+configuration of several packages. 
 
-Copy the Pck.psm1 and Packages.psm1 file to the virtual machine and run the installer.
+Copy the iiq-lab-windows/src/scripts and the iiq-lab-windows/docs 
+directory to the Documents directory.
 
 ```PowerShell
+$path = "z:\iiq-lab-windows\"
+cd ~\Documents
+Copy-Item "$path\src\scripts" -Recurse .
+Copy-Item "$path\docs" -Recurse .
+```
+
+Set the __ADDomain__ settings defined at the top of the Packages module prior
+to running Install-BasePackages.
+
+```PowerShell
+cd ~\Documents\scripts
 # Allow the script to be executed
-Unblock-File -Path .\Pck.psm1
 Unblock-File -Path .\Packages.psm1
 
 # Import the module
 Import-Module .\Packages.psm1
 
-# Download and install the packages
-Install-Packages
+# Download and install the base packages 
+# Installs PowerShell 7.5.0, Visual Studio Code 1.98.0
+# Installs and configures Microsoft Windows OpenSSH Capability and 
+# Active Directory. 
+Install-BasePackages
 ```
 
 __References__
 * https://woshub.com/pswindowsupdate-module/
 
 
-## Shutdown and Clone VM
-
-Shutdown and clone the VirtualBox VM to be able to revert to a baseline 
-configuration.
-
-## Install Active Directory
+## Configure Active Directory
 
 ```PowerShell
-# Create a secure password string
-$password = Read-Host -AsSecureString
-
-# From the Packages module, run the Install-ActiveDirectory command.
-Install-ActiveDirectory -ServerName "<server_name>" -DomainName "<domain_name>" -NetbiosName "<NAME>" -Pwd $password
-
 # Configure DNS Network Adapter Setting
 # Prevent this private DNS server from serving the public and loopback interfaces.
+# Change the domain_name variable to match your enviornment.
+# On the VirtualBox VM Ethernet is the public interface and Ethernet 2 is the 
+# private network interface. Match the InterfaceIndex to public and private.
+$domain_name = "aviumlabs.test"
 
 Get-DnsClient
 
@@ -233,6 +240,7 @@ Get-DnsClient
 Set-DnsClient -InterfaceIndex 7 -RegisterThisConnectionsAddress $false
 Set-DnsClient -InterfaceIndex 1 -RegisterThisConnectionsAddress $false
 Set-DnsClient -InterfaceIndex 1 -ConnectionSpecificSuffix $domain_name
+Set-DnsClient -InterfaceIndex 6 -ConnectionSpecificSuffix $domain_name
 Get-DnsClient
 
 >  
@@ -244,17 +252,15 @@ Get-DnsClient
 > Loopback Pse..    1                                 {}                        False            False  
 >  
 
-# Delete the 10.x DNS A resource record
-# Any A record containing the RecordData of 10.0.x.x should be deleted.
+# Delete the 10.x DNS A resource records
 Get-DnsServerResourceRecord -ZoneName $domain_name
 
 # ...
-
-Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name DomainDnsZones -RecordData "10.0.2.15"
-Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name ForestDnsZones -RecordData "10.0.2.15"
-Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name $server_name -RecordData "10.0.2.15"
-
-[Y] Yes [N] No [S] Suspend [?] Help (default is "Y"): __press enter__
+$server_name = "devsrv"
+Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name "@" -RecordData "10.0.2.15" -Force
+Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name DomainDnsZones -RecordData "10.0.2.15" -Force
+Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name ForestDnsZones -RecordData "10.0.2.15" -Force
+Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name $server_name -RecordData "10.0.2.15" -Force
 ```
 
 ## Shutdown and Clone VM
