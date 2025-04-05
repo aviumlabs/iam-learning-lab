@@ -138,8 +138,10 @@ Disable IPv6 unless you have an IPv6 use case.
 Get-NetIPConfiguration
 
 # Disable IPv6
-Disable-NetAdapterBinding "Ethernet" -ComponentID ms_tcpip6
-Disable-NetAdapterBinding "Ethernet 2" -ComponentID ms_tcpip6
+#Disable-NetAdapterBinding "Loopback Pseudo-Interface 1" -ComponentID ms_tcpip6
+#Disable-NetAdapterBinding "Ethernet" -ComponentID ms_tcpip6
+#Disable-NetAdapterBinding "Ethernet 2" -ComponentID ms_tcpip6
+Get-NetAdapter | ForEach { Disable-NetAdapterBinding -InterfaceAlias $_.Name -ComponentID ms_tcpip6 }
 ```
 
 
@@ -187,26 +189,21 @@ Install-Module -Name PSWindowsUpdate
 Get-WindowsUpdate -AcceptAll -Install -AutoReboot
 ```
 
-## Install Packages
+## Install Packages and Active Directory
 
 The Packages.psm1 PowerShell module supports the installation and 
 configuration of several packages. 
 
-Copy the iiq-lab-windows/src/scripts and the iiq-lab-windows/docs 
-directory to the Documents directory.
+__*Important*__ update the __ADDomain__ settings defined at the top of the 
+Packages module prior to running Install-BasePackages.
 
 ```PowerShell
-$path = "z:\iiq-lab-windows\"
-cd ~\Documents
-Copy-Item "$path\src\scripts" -Recurse .
-Copy-Item "$path\docs" -Recurse .
-```
+# Set execution policy to Bypass for the current user
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope CurrentUser -Force
 
-Set the __ADDomain__ settings defined at the top of the Packages module prior
-to running Install-BasePackages.
-
-```PowerShell
-cd ~\Documents\scripts
+# Shared Folder is typically mounted on the Z: drive in VirtualBox
+z:
+cd `\path\to\iiq-lab-windows\src\scripts`
 # Allow the script to be executed
 Unblock-File -Path .\Packages.psm1
 
@@ -237,19 +234,18 @@ $domain_name = "aviumlabs.test"
 Get-DnsClient
 
 # InterfaceIndexes may be different, set as required
-Set-DnsClient -InterfaceIndex 7 -RegisterThisConnectionsAddress $false
-Set-DnsClient -InterfaceIndex 1 -RegisterThisConnectionsAddress $false
+Set-DnsClient -InterfaceIndex 13 -RegisterThisConnectionsAddress $false
 Set-DnsClient -InterfaceIndex 1 -ConnectionSpecificSuffix $domain_name
-Set-DnsClient -InterfaceIndex 6 -ConnectionSpecificSuffix $domain_name
+Set-DnsClient -InterfaceIndex 12 -ConnectionSpecificSuffix $domain_name
 Get-DnsClient
 
 >  
 > InterfaceAlias    InterfaceConnectionSpecifcSuffix  ConnectionSpecificSuffix  RegisterThisConn UseSuffixWhen  
 >                   Index                             SearchList                ectionsAddress   Registering  
 > ------------     --------------------------------  ------------------------  ---------------- -------------  
-> Ethernet          7 localdomain                     {}                        True             False  
-> Ethernet 2        6 <domain_name>                   {}                        False            False  
-> Loopback Pse..    1                                 {}                        False            False  
+> Ethernet          13                                {}                        False            False  
+> Ethernet 2        12 $domain_name                   {}                        True             False  
+> Loopback Pse..    1  $domain_name                   {}                        True             False  
 >  
 
 # Delete the 10.x DNS A resource records

@@ -6,3 +6,12 @@ src/ssb/base/ap/*
 src/ssb/base/ga/*
 src/ssb/base/efix/*
 src/ssb/base/patch/*
+src/ssb/build/
+
+# Vim
+*.swo
+*.swn
+*.swp
+
+# Backup files
+*.bkp
