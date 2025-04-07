@@ -194,26 +194,35 @@ Get-WindowsUpdate -AcceptAll -Install -AutoReboot
 The Packages.psm1 PowerShell module supports the installation and 
 configuration of several packages. 
 
-__*Important*__ update the __ADDomain__ settings defined at the top of the 
+__*Important*__ update the __ADDomain__ values defined at the top of the 
 Packages module prior to running Install-BasePackages.
 
+>  
+> Set execution policy to Bypass for the current user  
+>
 ```PowerShell
-# Set execution policy to Bypass for the current user
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope CurrentUser -Force
-
-# Shared Folder is typically mounted on the Z: drive in VirtualBox
-z:
-cd `\path\to\iiq-lab-windows\src\scripts`
-# Allow the script to be executed
-Unblock-File -Path .\Packages.psm1
-
-# Import the module
+```
+>  
+> Shared Folder is typically mounted on the Z: drive in the Windows 
+> VirtualBox VM
+>  
+```PowerShell
+cd `z:\path\to\iiq-lab-windows\src\scripts`
+```
+>  
+> Import the module  
+>  
+```PowerShell
 Import-Module .\Packages.psm1
+```
 
-# Download and install the base packages 
-# Installs PowerShell 7.5.0, Visual Studio Code 1.98.0
-# Installs and configures Microsoft Windows OpenSSH Capability and 
-# Active Directory. 
+>  
+> Download and install the base packages  
+> Installs PowerShell 7.5.0, Visual Studio Code 1.99.0  
+> Installs and configures Microsoft Windows OpenSSH Capability and  
+> Active Directory.  
+```PowerShell
 Install-BasePackages
 ```
 
@@ -221,7 +230,7 @@ __References__
 * https://woshub.com/pswindowsupdate-module/
 
 
-## Configure Active Directory
+## Configure DNS
 
 ```PowerShell
 # Configure DNS Network Adapter Setting
@@ -261,8 +270,8 @@ Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name $server_na
 
 ## Shutdown and Clone VM
 
-Shutdown and clone the VirtualBox VM to be able to revert to an AD baseline 
-configuration.
+Shutdown and clone or take a snapshot of the VirtualBox VM to be able to 
+revert to an AD baseline configuration.
 
 
 __End of Windows Installation and Configuration__

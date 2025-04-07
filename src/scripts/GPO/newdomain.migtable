@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-16"?>
+<MigrationTable xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.microsoft.com/GroupPolicy/GPOOperations/MigrationTable">
+  <Mapping>
+    <Type>GlobalGroup</Type>
+    <Source>Domain Admins@aviumlabs.test</Source>
+    <Destination>Domain Admins@aviumlabs.test</Destination>
+  </Mapping>
+  <Mapping>
+    <Type>UniversalGroup</Type>
+    <Source>Enterprise Admins@aviumlabs.test</Source>
+    <Destination>Enterprise Admins@aviumlabs.test</Destination>
+  </Mapping>
+  <Mapping>
+    <Type>GlobalGroup</Type>
+    <Source>LogonAsService@aviumlabs.test</Source>
+    <Destination>LogonAsService@aviumlabs.test</Destination>
+  </Mapping>
+</MigrationTable>
+
+

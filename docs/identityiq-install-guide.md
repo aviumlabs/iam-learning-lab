@@ -18,17 +18,27 @@ stack for running IdentityIQ.
 
 Login to the devsrv and run the following commands in PowerShell 7.
 
+>  
+> The Shared Folder is typically mounted on the Z: drive in the Windows  
+> VirtualBox VM.  
+>  
 ```PowerShell
-# Shared Folder is typically mounted on the Z: drive in VirtualBox
-z:
-cd `\path\to\iiq-lab-windows\src\scripts`
+cd `z:\path\to\iiq-lab-windows\src\scripts`
+```
 
-# Import the module
+>  
+> Import the Packages Module  
+>  
+```PowerShell
 Import-Module .\Packages.psm1
+```
 
-# Downloads, installs and configures the packages required for the IdentityIQ 
-# lab Windows environment.
-# OpenJDK 21, Apache Tomcat 9, PostgreSQL 15
+>  
+> Download, install and configures the packages required for the IdentityIQ  
+> lab Windows environment.  
+> OpenJDK 21, Apache Tomcat 9, PostgreSQL 15  
+>  
+```PowerShell
 Install-Packages
 ```
 
