@@ -73,6 +73,36 @@ The password for the `postgres` account is written to:
 
 ## IdentityIQ Build
 
-The iiq-lab-windows project includes the SailPoint `Standard Services Build` 
-as the method for building an IdentityIQ deloyment.
+The iiq-lab-windows project uses the SailPoint `Standard Services Build` (ssb) 
+for building an IdentityIQ deloyment.
 
+Standard services build (ssb) uses Apache Ant for building an IdentityIQ 
+deployment. There are several files that are used to control the build of 
+IdentityIQ.
+
+The build.properties file is the central control of the build process. 
+There are several values that are required to be set prior to running a 
+build.
+
+__Required Properties__
+| Property | Purpose |
+| :--- | :--- | 
+| IIQVersion= | Sets the version of IdentityIQ to be deployed i.e. 8.4 |
+| IIQPatchLevel= | Sets the patch version of IdentityIQ |
+
+The following optional properties are useful in the deployment of IdentityIQ.
+These properties are based on the individual components licensed. Setting these 
+properties to true includes these components in the deployment. 
+
+__Optional Properties__
+| Property | Purpose |
+| :--- | :--- |
+| usingLcm= | Set to true to enb
+
+
+```PowerShell
+# Set build environment
+$env:SPTARGET = "sandbox"
+
+# Run the build command
+.\build
