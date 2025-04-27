@@ -22,7 +22,7 @@ The Shared Folder is typically mounted on the Z: drive in the Windows
 VirtualBox VM.  
  
 ```PowerShell
-cd `z:\path\to\iiq-lab-windows\src\scripts`
+cd `z:\path\to\iam-lab-windows\src\scripts`
 ```
 
 Import the `Aviumlabs-Packages` module:  
@@ -80,10 +80,9 @@ This is a long running process at least on my hardware:
 * MacBook Pro : 2.4 GHz Quad-Core Intel Core i5
 
 ```PowerShell
-cd `z:\path\to\iiq-lab-windows\src\scripts`
+cd `z:\path\to\iam-lab-windows\src\scripts`
 ```
 
- 
 Import the Aviumlabs-Iiq module:  
   
 ```PowerShell
@@ -94,7 +93,7 @@ Import-Module .\Aviumlabs-Iiq.psm1
 Install-IdentityIQ
 ```
 
-After the deployment has completed open `https://\<server_name>:8443/identityiq.`
+After the deployment has completed open `https://<server_name>:8443/identityiq.`
 
 Login with the standard administrator account `spadmin`
 

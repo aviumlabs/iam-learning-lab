@@ -221,7 +221,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope CurrentUser -Force
 The `Shared Folder` is typically mounted on the Z: drive in the Windows 
 VirtualBox VM  
 ```PowerShell
-cd `z:\path\to\iiq-lab-windows\src\scripts`
+cd `z:\path\to\iam-lab-windows\src\scripts`
 ```
 
 :Import the Aviumlabs-Packages module:     
