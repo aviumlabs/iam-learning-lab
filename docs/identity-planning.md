@@ -11,35 +11,49 @@ work. If not, see <http://creativecommons.org/licenses/by/4.0/>
 Managing identities is a core pillar of Cybersecurity and getting to 
 a `managed identity` state is a challenge for many organizations. 
 
-This planning guide is based on the core principle of least privilege, where 
-an identity only has the required permissions to perform well-defined job 
-repsonsiblities within the organization. 
+This identity model is based on the principle of __least data__, similar to 
+__least privilege__; the identity model captures sufficient attributes for an 
+organization to be able to efficiently manage identities and access. 
 
-A second principle of this guide is to produce a sufficient core identity 
-record. Where sufficient is defined similar to least privilege; an identity 
-record has only the required attributes necessary to support the organization's 
+The identity model needs to be able to support the organization's 
 business processes. 
 
-This approach makes the Identity data set less valuable to hackers and reduces 
-the exporsure in the event of a breach. 
+This approach makes the Identity data set less valuable to hackers, reduces 
+exporsure in the event of a breach, and increases the maintainability of the 
+data set. 
 
 The data model developed in this guide will be the model used in this lab.
 
 Identities can be used to identify nearly anything in an organization. This 
-guide will focus on people and a pseudo HR representation. 
+guide will focus on people and machines - in this guide service accounts fall 
+under machines.
+
+Planning the identity model prior to deployment is an __important__ first step,
+as IdentityIQ processes revolve around the identity model. Out-of-the-box 
+IdentityIQ only supports 10 searchable attributes. If an organization requires 
+more than 10 searchable attributes, then the IdentityIQ identity model needs to 
+be extended during deployment. 
 
 
 ## Identity Model
 
-| Attribute Name | Attribute Purpose |
+| Attribute Friendly Name | Attribute Purpose |
 | :---           | :--- |
 | Unique Id      | An identifier, typcially a number that uniquely identifies the identity across the organization. |
-| Name           | The full name of the identity. |
-| Type           | The type of the identity. |
-| Given Name     | The given name of the identity. |
+| Type           | The type of the identity, i.e., Employee, Contractor, Machine,  |
+| Status         | The status of the identity, i.e., Active, Disabled |
+| Given Name     | The given name or first name of the identity. |
 | Middle Name    | Optional middle name of the identity. |
-| Surame         | The surname or family name of the identity. |
-| Title          | 
+| Family Name    | The family name or last name of the identity. |
+| Dipplay Name   | The full name of the identity. |
+| Title          | Optional prefix of the identity - i.e., Mr, Ms, Mrs, Miss, Mx. |
+| Suffix         | Optional generational qualifier - i.e., Jr, Sr, I, II. |
+| Organiation    | The name of the organization where the identity is deployed. |
+| Business Unit  | The unit or division where the identity is deployed. |
+| Department     | The department where the identity is deployed. |
+| Job Title      | The job title of the identity. |
+| Location       | Optional physical / logical location of the identity. | 
+| Mobile         | The mobile telephone number of the identity. |
 
 
 ## IdentityIQ Out-of-the-Box (OOTB) Identity Attributes
@@ -52,14 +66,16 @@ IdentityIQ has 5 OOTB identity attributes that are searchable and indexed.
 | name | Unique identifier (i.e. EmployeeId, UserId, Username, etc) |
 | firstname | Identity full first name |
 | lastname  | Identity full last name |
-| type | Identity type
-| location | Identity physical geographical location |
+| type | Identity type |
+
+
 
 IdentityIQ supports additional identity attributes out-of-the-box, 
 10 OOTB extended identity attributes searchable and 5 indexed.
 
 
 ### Default Identity Types
+
 * Employee
 * Contractor
 * External / Partner
@@ -68,7 +84,6 @@ IdentityIQ supports additional identity attributes out-of-the-box,
 
 
 ## Workgroups
-
 
 Workgroups are used to manage internal SailPoint access, for shared 
 responsibilities, or managing tasks. 
@@ -86,7 +101,6 @@ Such as:
 
 
 ## Populations
-
 
 Populations are sets of identities generated from queries on the Advanced 
 Analytics page and can be based on multiple criteria. Any identity attribute 

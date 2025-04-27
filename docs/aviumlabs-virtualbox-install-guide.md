@@ -1,15 +1,15 @@
-Windows VirtualBox VM Installation Guide (c) by Michael Konrad
+Aviumlabs VirtualBox VM Install Guide (c) by Michael Konrad
 
-Windows VirtualBox VM Installation Guide is licensed under a
+Aviumlabs VirtualBox VM Install Guide is licensed under a
 Creative Commons Attribution 4.0 International License.
 
 You should have received a copy of the license along with this
 work. If not, see <http://creativecommons.org/licenses/by/4.0/>
 
 
-# Microsoft Windows Server 2022 VirtualBox VM Install Guide
+# Aviumlabs VirtualBox VM Install Guide - Windows Server 2022
 
-A guide for configuring a VirtualBox VM to run Windows Server 2022.
+A guide for configuring a VirtualBox VM running Windows Server 2022.
 
 ## Download Evaluation ISO
 
@@ -21,7 +21,7 @@ Select ISO downloads 64-bit edition
 ## Configure VM
 
 Assumptions:
-* A "Software" directory exists to be setup as a VirtualBox `Shared Folder`. 
+* A `Software` directory exists to be setup as a VirtualBox `Shared Folder`. 
 
 Open VirtualBox
 
@@ -40,6 +40,8 @@ Open VirtualBox
   * Select Finish
 
 Select Settings
+- Select General > Advanced
+  * Set Shared Clipboard > Bidirectional
 - Select System
   * __Boot Order__
   * Unselect Floppy
@@ -124,7 +126,6 @@ w32tm /query /status
 ```
 
 ## Turnoff Server Manager Dashboard
-
 ```PowerShell
 Get-ScheduledTask -TaskName ServerManager | Disable-ScheduledTask -Verbose
 ```
@@ -133,51 +134,57 @@ Get-ScheduledTask -TaskName ServerManager | Disable-ScheduledTask -Verbose
 ## Disable IPv6
 Disable IPv6 unless you have an IPv6 use case.
 
+Display the current IP configuration:  
 ```PowerShell
-# Get the current IP configuration 
 Get-NetIPConfiguration
+```
 
-# Disable IPv6
-#Disable-NetAdapterBinding "Loopback Pseudo-Interface 1" -ComponentID ms_tcpip6
-#Disable-NetAdapterBinding "Ethernet" -ComponentID ms_tcpip6
-#Disable-NetAdapterBinding "Ethernet 2" -ComponentID ms_tcpip6
+Disable IPv6:  
+```PowerShell
 Get-NetAdapter | ForEach { Disable-NetAdapterBinding -InterfaceAlias $_.Name -ComponentID ms_tcpip6 }
 ```
 
 
-## Set Host-Adapter Network Configuration
+## Set Network Configuration
 
+Set the IP address, where InterfaceIndex matches Host-Only Adapter (192.168.56.x):  
 ```PowerShell
-# Get current network configuration
-Get-NetIPConfiguration
-
-# Set the IP address, where InterfaceIndex matches Host-Only Adapter (192.168.56.x)
 New-NetIPAddress -IPAddress 192.168.56.20 -InterfaceIndex 6 -PrefixLength 24 `
 -DefaultGateway 192.168.56.1
+```
 
-# Review Profiles
+Review Firewall profiles:  
+```PowerShell
 Get-NetFirewallProfile
+```
 
-# Block Inbound Connections by Default
+Block Inbound connections by default:  
+```PowerShell
 Set-NetFirewallProfile -DefaultInboundAction Block -DefaultOutboundAction Allow `
 -NotifyOnListen False -AllowUnicastResponseToMulticast True `
 -LogFileName $env:SystemRoot\System32\LogFiles\Firewall\pfirewall.log
+```
 
-# Allow ICMPv4 (ping)
+Allow ICMPv4 (ping / Test-NetConnection):  
+```PowerShell
 New-NetFirewallRule -Name 'ICMPv4' -DisplayName 'ICMPv4' `
 -Description 'Allow ICMPv4' -Enabled True -Profile Any `
 -Direction Inbound -Protocol ICMPv4 -Program Any -Action Allow `
 -RemoteAddress LocalSubnet
+```
 
-# Confirm new firewall rule
+Confirm new firewall rule:  
+```PowerShell
 Get-NetFirewallRule | Where-Object Name -Like 'ICMPv4'
 ```
 
-```PowerShell
-# Test ICMP from Workstation 
+Test ICMP from workstation:  
+```shell
 ping 192.168.56.20
+```
 
-# or 
+or:  
+```PowerShell 
 Test-NetConnection -ComputerName devsrv
 ```
 
@@ -185,43 +192,49 @@ Test-NetConnection -ComputerName devsrv
 
 ```PowerShell
 Install-Module -Name PSWindowsUpdate
+```
 
+```PowerShell
 Get-WindowsUpdate -AcceptAll -Install -AutoReboot
 ```
 
 ## Install Packages and Active Directory
 
-The Packages.psm1 PowerShell module supports the installation and 
+The `Aviumlabs-Packages.psm1` PowerShell module supports the install and 
 configuration of several packages. 
 
-__*Important*__ update the __ADDomain__ values defined at the top of the 
-Packages module prior to running Install-BasePackages.
-
->  
-> Set execution policy to Bypass for the current user  
->
+__Important__ update these __ADDomain__ values defined at the top of the 
+`Aviumlabs-Packages` module prior to running `Install-BasePackages`:   
+* "DomainName" = "aviumlabs.test"
+* "NetbiosName" = "AVIUMLABS"
+* "RootDN" = "DC=aviumlabs,DC=test"
+* "ServerName" = "devsrv.aviumlabs.test"
+* "Locality" = "Washington"
+* "Organization" = "Aviumlabs"
+* "Country" = "US"
+ 
+Set execution policy to Bypass for the current user:  
 ```PowerShell
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope CurrentUser -Force
 ```
->  
-> Shared Folder is typically mounted on the Z: drive in the Windows 
-> VirtualBox VM
->  
+ 
+The `Shared Folder` is typically mounted on the Z: drive in the Windows 
+VirtualBox VM  
 ```PowerShell
 cd `z:\path\to\iiq-lab-windows\src\scripts`
 ```
->  
-> Import the module  
->  
-```PowerShell
-Import-Module .\Packages.psm1
-```
 
->  
-> Download and install the base packages  
-> Installs PowerShell 7.5.0, Visual Studio Code 1.99.0  
-> Installs and configures Microsoft Windows OpenSSH Capability and  
-> Active Directory.  
+:Import the Aviumlabs-Packages module:     
+```PowerShell
+Import-Module .\Aviumlabs-Packages.psm1
+```
+ 
+Download, install, and configure base packages and Windows features:  
+* PowerShell 7.5.1
+* Visual Studio Code 1.99.3  
+* Microsoft Windows OpenSSH Capability 
+* Microsoft Active Directory
+
 ```PowerShell
 Install-BasePackages
 ```
@@ -232,21 +245,26 @@ __References__
 
 ## Configure DNS
 
-```PowerShell
-# Configure DNS Network Adapter Setting
-# Prevent this private DNS server from serving the public and loopback interfaces.
-# Change the domain_name variable to match your enviornment.
-# On the VirtualBox VM Ethernet is the public interface and Ethernet 2 is the 
-# private network interface. Match the InterfaceIndex to public and private.
-$domain_name = "aviumlabs.test"
+Configure DNS Network Adapter Setting  
+Prevent this private DNS server from serving the public and loopback interfaces.  
 
+On the VirtualBox VM, Ethernet is the public interface and Ethernet 2 is the 
+private network interface. Match the InterfaceIndex to public and private.  
+
+Change the domain_name variable to match your enviornment:  
+```PowerShell
+$domain_name = "aviumlabs.test"
+```
+
+```PowerShell
 Get-DnsClient
 
 # InterfaceIndexes may be different, set as required
-Set-DnsClient -InterfaceIndex 13 -RegisterThisConnectionsAddress $false
+Set-DnsClient -InterfaceIndex 13 -RegisterThisConnectionsAddress $False
 Set-DnsClient -InterfaceIndex 1 -ConnectionSpecificSuffix $domain_name
 Set-DnsClient -InterfaceIndex 12 -ConnectionSpecificSuffix $domain_name
 Get-DnsClient
+```
 
 >  
 > InterfaceAlias    InterfaceConnectionSpecifcSuffix  ConnectionSpecificSuffix  RegisterThisConn UseSuffixWhen  
@@ -257,14 +275,27 @@ Get-DnsClient
 > Loopback Pse..    1  $domain_name                   {}                        True             False  
 >  
 
-# Delete the 10.x DNS A resource records
-Get-DnsServerResourceRecord -ZoneName $domain_name
+## Clean Up DNS
 
-# ...
-$server_name = "devsrv"
+Display the DNS resource records:  
+```PowerShell
+Get-DnsServerResourceRecord -ZoneName $domain_name
+```
+
+Remove the public interface records:  
+```PowerShell
+$server_name = hostname
+```
+```PowerShell
 Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name "@" -RecordData "10.0.2.15" -Force
+```
+```PowerShell
 Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name DomainDnsZones -RecordData "10.0.2.15" -Force
+```
+```PowerShell
 Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name ForestDnsZones -RecordData "10.0.2.15" -Force
+```
+```PowerShell
 Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name $server_name -RecordData "10.0.2.15" -Force
 ```
 
