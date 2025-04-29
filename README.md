@@ -40,11 +40,15 @@ This lab's software components:
 Setting up `Aviumlabs IAM Learning Lab` is documented in the guides 
 in the docs directory. 
 
-1. [windows-virtualbox-install-guide](./docs/windows-virtualbox-install-guide.md)
-2. [iiq-lab-install-guide](./docs/iiq-lab-install-guide.md)
+1. [aviumlabs-virtualbox-install-guide](./docs/aviumlabs-virtualbox-install-guide.md)
+2. [aviumlabs-iam-lab-install-guide](./docs/aviumlabs-iam-lab-install-guide.md)
 
 
-To complete the lab installation, IdentityIQ needs to be downloaded from SailPoint 
+## Prerequisite Steps
+
+The following prequisite steps need to be completed prior to running `Install-IdentityIQ`.
+
+To complete the lab install, IdentityIQ needs to be downloaded from SailPoint 
 https://community.sailpoint.com - requires a SailPoint Compass account.
 
 IdentityIQ 8.4
@@ -68,3 +72,10 @@ Get-FileHash -Path "identityiq-8.4.zip" -Algorithm SHA256
 # Verify hash against identityiq-8.4p2-CHECKSUM.txt
 Get-FileHash -Path "identityiq-8.4p2.jar" -Algorithm SHA256
 ```
+
+Copy the `identityiq-8.4.zip` file to your **private** repository to the 
+**src\ssb\base\ga** directory.
+
+Copy the `identityiq-8.4p2.jar` file to the **src\ssb\base\patch** 
+directory.
+

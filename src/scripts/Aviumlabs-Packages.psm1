@@ -55,69 +55,10 @@ $BasePackages = [ordered]@{
         vhash = "B110ECCAF55BB53AE5E6B6DE478587ED8203570B0BDA9BD374A0998E24D4033A";
         verified = $false;
     }
-    "VSCodeSetup-x64-1.99.3.exe" = @{ 
-        endpoint = "https://update.code.visualstudio.com/1.99.3/win32-x64/stable";
-        halg = "SHA256"
-        vhash = "63c953399ba60de2bdadf767ec49daa6a7bd19bf57f61b0274b57291bdab685c";
-        verified = $false;
-    }
-}
-
-# Silent install does not work with apache-tomcat-9.0.104.exe
-$Packages = [ordered]@{
-    "ant-contrib-1.0b3-bin.zip" = @{
-        endpoint = "$PSScriptRoot\Packages\ant-contrib-1.0b3-bin.zip";
-        halg = "MD5";
-        vhash = "c5a75fc28cbc52f09bd43b5506978601";
-        verified = $false;
-    }
-    "apache-ant-1.10.15-bin.zip" = @{
-        endpoint = "https://dlcdn.apache.org/ant/binaries/apache-ant-1.10.15-bin.zip";
-        halg = "SHA512";
-        vhash = "1de7facbc9874fa4e5a2f045d5c659f64e0b89318c1dbc8acc6aae4595c4ffaf90a7b1ffb57f958dd08d6e086d3fff07aa90e50c77342a0aa5c9b4c36bff03a9";
-        verified = $false;
-    }
-    "apache-jmeter-5.6.3.zip" = @{
-        endpoint = "https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-5.6.3.zip";
-        halg = "SHA512";
-        vhash = "387fadca903ee0aa30e3f2115fdfedb3898b102e6b9fe7cc3942703094bd2e65b235df2b0c6d0d3248e74c9a7950a36e42625fd74425368342c12e40b0163076";
-        verified = $false;
-    }
-    "apache-tomcat-9.0.102.exe" = @{
-        endpoint = "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.102/bin/apache-tomcat-9.0.102.exe";
-        halg = "SHA512";
-        vhash = "8ddf5b5d41ec83b02a7bd74e9ccd36c99a56b6ba8a0f35e89d6bdc360c760ca7c56c64f93f7279d5ea9b1ec891c51e358f3d9de579571517bea4220c1778abc0";
-        verified = $false;
-    }
-    "openjdk-21.0.2_windows-x64_bin.zip" = @{
-        endpoint = "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip";
-        halg = "SHA256";
-        vhash = "b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664";
-        verified = $false;
-    }
-    "postgresql-15.12-1-windows-x64.exe" = @{
-        endpoint = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259511";
-        halg = "SHA256";
-        vhash = "119B30D75AF7417A1FBC45B174E680C181FF06A53C8FBBAB658987035F38EA1C";
-        verified = $false;
-    }
-    "postgresql-42.7.5.jar" = @{
-        endpoint = "https://jdbc.postgresql.org/download/postgresql-42.7.5.jar";
-        halg = "SHA256";
-        vhash = "69020B3BD20984543E817393F2E6C01A890EF2E37A77DD11D6D8508181D079AB";
-        verified = $false;
-    }
-    "tomcat-native-2.0.8-openssl-3.0.14-win32-bin.zip" = @{
-        endpoint = "https://dlcdn.apache.org/tomcat/tomcat-connectors/native/2.0.8/binaries/tomcat-native-2.0.8-openssl-3.0.14-win32-bin.zip";
-        halg = "SHA512";
-        vhash = "a4a8816668f14a7461711e25cb9277534981936c9e6f8b00ae55084cb265dc1d89ad07fa508ae2e1f7832236dafafbdd9d76a313c87f34e00ecfdfe75776638a";
-        verified = $false;
-    }
 }
 
 New-Variable -Name ADDoamin -Value $ADDomain -Scope Script -Force
 New-Variable -Name BasePackages -Value $BasePackages -Scope Script -Force
-New-Variable -Name Packages -Value $Packages -Scope Script -Force
 
 
 # =============================================================================
@@ -155,7 +96,6 @@ function Install-BasePackages {
     Get-Packages -Path $Path -Pkgs $BasePackages
 
     Install-PowerShell -Path $Path
-    Install-VSCode -Path $Path
     Install-OpenSSH -Path $Path
     Initialize-OpenSSH -Path $Path
     Install-ActiveDirectory -Path $Path
@@ -213,6 +153,7 @@ function Install-Packages {
     Install-ApacheAnt -Path $Path
     Install-ApacheJMeter -Path $Path
     Install-ApacheTomcat -Path $Path
+    Install-VSCode -Path $Path
     Set-ApacheFSPermissions -Path $Path
     Initialize-ApacheTomcat -Path $Path
     Initialize-ApacheTomcatUsers -Path $Path
@@ -426,37 +367,6 @@ function Get-ClosestMultiple {
 
 <#
 .SYNOPSIS 
-    Internal function to retrieve the package filename.
-.DESCRIPTION
-    Internal function to retrieve the package filename from Packages dictionary,
-    package dictionaries are defined at the top of this script.
-.PARAMETER Name
-    Name of the package to lookup.
-.PARAMETER Pkgs
-    The packages dictionary containing the package to be looked up.
-.EXAMPLE
-    Get-PackageName -Name "PowerShell" -Pkgs $BasePackages
-    Get-PackageName -Name "OpenJDK" -Pkgs $Packages
-#>
-function Get-PackageName {
-    param (
-        [Parameter(Mandatory)]
-        [string]$Name,
-        [Parameter(Mandatory)]
-        [System.Collections.Hashtable]$Pkgs
-    )
-    foreach ($pkg in $Pkgs.Keys) {
-        if ( $($pkg) -Match $Name ) {
-            $filename = $($pkg)
-        }
-    }
-
-    return $filename
-}
-
-
-<#
-.SYNOPSIS 
     Internal function to download a specific package.
 .DESCRIPTION
     Internal function to download and verify a specific package.
@@ -546,6 +456,7 @@ function Get-Packages {
             $pkg_alg = $($Pkgs[$pkg]['halg'])
             $ast = Assert-Integrity -PkgPath $pkg_path -Hash $pkg_sha -Alg $pkg_alg
             if ($ast) {
+                $Pkgs[$pkg]['verified'] = $true
                 Write-Log -Message "$pkg integrity verified."
             }
         } else {
@@ -805,6 +716,7 @@ function Initialize-ApacheTomcat {
 
     Compress-Archive -Path $src_path -DestinationPath $bk_path | Out-Null
     Remove-Item "$src_path\docs" -Recurse -Force
+    Remove-Item "$src_path\examples" -Recurse -Force
     Remove-Item "$src_path\ROOT" -Recurse -Force
     Write-Log -Message "Apache Tomcat webapss backup completed."
 
@@ -901,7 +813,7 @@ function Initialize-ApacheTomcat {
     $logging_prop_path = "$env:CATALINA_BASE\conf\logging.properties"
 
     $match_term = 'localhost'
-    ((Get-Content -Path $logging_prop_path -Raw) -Replace $match_term, $server_name) `
+    ((Get-Content -Path $logging_prop_path -Raw) -Replace $match_term, $instance_name) `
     | Set-Content -Path $logging_prop_path
 
     $match_term = '(1catalina.org.apache.juli.AsyncFileHandler.prefix = )catalina.'
@@ -1287,7 +1199,7 @@ function Install-ApacheAnt {
         [string]$Path
     )
     # Install Apache Ant 1.10.x
-    Write-Log -Message "Installing Apache Ant...`n"
+    Write-Log -Message "Installing Apache Ant..."
     $pkg = Get-PackageName -Name "apache-ant" -Pkgs $Packages
     if ($Packages[$pkg]['verified']) {
         $apache_ant = [string]$pkg.Split("-bin.zip")
@@ -1322,7 +1234,7 @@ function Install-ApacheAnt {
             Write-Log -Message "Ant Contrib not copied, package failed verification."
         }
 
-        Write-Log -Message "Apache Ant installation completed.`n"
+        Write-Log -Message "Apache Ant installation completed."
     } else {
         Write-Log -Message "Apache Ant not installed, package failed verification."
     }
@@ -1346,7 +1258,7 @@ function Install-ApacheJMeter {
         [string]$Path
     )
     # Install Apache JMeter 5.6.x
-    Write-Log -Message "Installing Apache JMeter...`n"
+    Write-Log -Message "Installing Apache JMeter..."
     $pkg = Get-PackageName -Name "apache-jmeter" -Pkgs $Packages
     if ($Packages[$pkg]['verified']) {
         $apache_jmeter = [string]$pkg.Split(".zip")
@@ -1359,9 +1271,9 @@ function Install-ApacheJMeter {
         Expand-Archive -Path $installer $install_path | Out-Null
 
         # Set session environment variables
-        $env:JMETER_HOME = "$install_path\$apache_jmeter"
+        $env:JMETER_HOME = "$install_path$apache_jmeter"
         $env:PATH = "$env:PATH;$apache_jmeter_bin_path"
-        Write-Log -Message "Apache JMeter installation completed.`n"
+        Write-Log -Message "Apache JMeter installation completed."
     } else {
         Write-Log -Message "Apache JMeter not installed, package failed verification."
     }
@@ -1387,21 +1299,19 @@ function Install-ApacheTomcat {
     # Install Apache Tomcat 9.0.x
     Write-Log -Message "Installing Apache Tomcat..."
     $pkg = Get-PackageName -Name "apache-tomcat" -Pkgs $Packages
-    Write-Log -Message "Apache Tomcat package name...$pkg."
     $server_name = hostname
     $server_name = $server_name.ToLower()
     if ($Packages[$pkg]['verified']) {
-        $apache_tomcat = [string]$pkg.Split(".exe")
+        $apache_tomcat = [string]$pkg.Split("-windows-x64.zip")
         $apache_tomcat = $apache_tomcat.Trim()
         $cat_home = $Path + $Directories["bin"] + $apache_tomcat
-        Write-Log -Message "Apache Tomcat catalina home...$cat_home."
         $cat_bin = $cat_home + "\bin"
-        $cat_base = $Path + $Directories["tomcat"] + "\$server_name-$TcInstanceId"
-        Write-Log -Message "Apache Tomcat catalina base...$cat_base."
+        $cat_base = $Path + $Directories["tomcat"] + "\$server_name$TcInstanceId"
+        $install_path = $Path + $Directories["bin"]
         $installer = $Path + $Directories["downloads"] + $pkg
-        Write-Log -Message "Running Apache Tomcat installer..."
+        Expand-Archive -Path $installer $install_path | Out-Null
         # Launch installer
-        .$installer /S /D=$cat_home | Out-Null
+        #.$installer /S /D=$cat_home | Out-Null
 
         # Install Tomcat Native
         # Extract and copy files to $cat_bin: tcnative-2.dll, openssl.exe
@@ -1452,12 +1362,15 @@ function Install-OpenJDK {
         $dl_path = $Path + $Directories["downloads"]
         $installer = $dl_path + $pkg
         $install_path = $Path + $Directories["bin"]
-        $jdk_bin_path = $install_path + "jdk-21\bin"
+        # openjdk-21.0.2_windows-x64_bin.zip
+        $res = $pkg -Match '[0-9]{2}.[0-9]{1}.[0-9]{1}'
+        $jdk_version = $Matches[0]
+        $jdk_bin_path = $install_path + "jdk-$jdk_version\bin"
         # Launch installer
         Expand-Archive -Path $installer $install_path | Out-Null
 
         # Set session environment variables
-        $env:JAVA_HOME = $install_path + "jdk-21"
+        $env:JAVA_HOME = $install_path + "jdk-$jdk_version"
         $env:PATH = "$jdk_bin_path;$env:PATH"
 
         Write-Log -Message "OpenJDK installation completed."
@@ -1525,6 +1438,7 @@ function Install-PostgreSQL {
         .$installer --mode unattended --prefix $bin_path --datadir $data_path --enable_acledit 1 --superpassword $r_pass | Out-Null
 
         # Set session environment variables
+        $env:PGDATA = $data_path
         $env:PSQL_HOME = $bin_path
         $env:PATH = "$env:PATH;$bin_path"
 
@@ -1534,15 +1448,6 @@ function Install-PostgreSQL {
         -Protocol TCP -LocalPort 5432 -RemoteAddress LocalSubnet -Action Allow `
         -Description "PostgreSQL TCP 5432 Inbound Allow" | Out-Null
         Write-Log -Message "PostgreSQL installation completed."
-
-        Write-Log -Message "Copying PostgreSQL JDBC driver to ssb..."
-        $jdbc_pkg = Get-PackageName -Name "postgresql-42" -Pkgs $Packages
-        $psql_jdbc_src_path = $Path + $Directories["downloads"] + $jdbc_pkg 
-        $psql_jdbc_dest_path = "$SsbHome\build\extract\WEB-INF\lib"
-        if (-Not(Test-Path -Path $psql_jdbc_dest_path)) {
-            Copy-Item -Path $psql_jdbc_src_path -Destination $psql_jdbc_dest_path | Out-Null
-        }
-        Write-Log -Message "PostgreSQL JDBC driver copy completed."
     } else {
         Write-Log -Message "PostgreSQL not installed, package failed verification."
     }
@@ -1576,13 +1481,13 @@ function Install-VSCode {
         [Parameter(Mandatory)]
         [string]$Path
     )
-    # Install Visual Studio Code 1.98.x
+    # Install Visual Studio Code 1.99.x
     # VSCODE_HOME = 'C:\Program Files\Microsoft VS Code'
     $vscode_bin = "C:\Program Files\Microsoft VS Code\bin\code"
     if (-Not (Test-Path -Path $vscode_bin)) {
         Write-Log -Message "Installing Visual Studio Code..."
-        $pkg = Get-PackageName -Name "VSCodeSetup" -Pkgs $BasePackages          
-        if ($BasePackages[$pkg]['verified']) {
+        $pkg = Get-PackageName -Name "VSCodeSetup" -Pkgs $Packages          
+        if ($Packages[$pkg]['verified']) {
             $installer = $Path + $Directories["downloads"] + $pkg
 
             # Launch installer
@@ -1792,7 +1697,7 @@ function Set-ApacheFSPermissions {
     "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
 
     $tc_pkg_name = Get-PackageName -Name "apache-tomcat" -Pkgs $Packages
-    $tc_pkg_name = $tc_pkg_name.Split(".exe")
+    $tc_pkg_name = $tc_pkg_name.Split("-windows-x64.zip")
     $tc_pkg_name = $tc_pkg_name.Trim()
 
     $tc_bin_path = $Path + $Directories["bin"] + $tc_pkg_name
@@ -1843,6 +1748,7 @@ function Set-PermanentEnvVariables {
     # Set PostgreSQL permanent environment variables
     $psql_home = $bin_path + "postgresql\15"
     $psql_bin_path = $bin_path + "postgresql\15\bin"
+    [Environment]::SetEnvironmentVariable("PGDATA", $env:PGDATA, "Machine")
     [Environment]::SetEnvironmentVariable("PSQL_HOME", $psql_home, "Machine")
     [Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$psql_bin_path", "Machine")
 

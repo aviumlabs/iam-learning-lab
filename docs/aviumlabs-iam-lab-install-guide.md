@@ -10,7 +10,7 @@ work. If not, see <http://creativecommons.org/licenses/by/4.0/>
 # Aviumlabs IAM Learning Lab Install Guide
 
 After completing the `Aviumlabs VirtualBox VM` install, run the 
-Aviumlabs-Packages module `Install-Packages` cmdlet to install and 
+Aviumlabs-Packages module `Install-Packages` function to install and 
 configure the stack for running `Aviumlabs IAM Learning Lab`.
 
 

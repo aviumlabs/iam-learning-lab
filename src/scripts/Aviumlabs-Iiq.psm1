@@ -293,7 +293,6 @@ function Initialize-IiqDatabase {
 #>
 function Initialize-IiqExtract {
     $build = "$SsbHome\build.bat"
-    Write-Log -Message "This is a long running process, be patient..."
     # Run build clean prior to running build extract if build extract is 
     # already existing
     if (Test-Path -Path "$SsbHome\build\extract") {
@@ -305,7 +304,7 @@ function Initialize-IiqExtract {
     
     # Build the IdentityIQ extract
     Invoke-Command -ScriptBlock { 
-        Write-Progress -Activity "Building IdentityIQ..."
+        Write-Progress -Activity "Building IdentityIQ extract..."
         .$build 
     } | Out-Null
 }
@@ -330,7 +329,18 @@ function Initialize-IiqWar {
             Write-Progress -Activity "Running build clean...";
             .$build clean 
         } | Out-Null
+    } else {
+        Initialize-IiqExtract
     }
+
+    Write-Log -Message "Copying PostgreSQL JDBC driver to ssb..."
+    $jdbc_pkg = Get-PackageName -Name "postgresql-42" -Pkgs $Packages
+    $psql_jdbc_src_path = $Path + $Directories["downloads"] + $jdbc_pkg 
+    $psql_jdbc_dest_path = "$SsbHome\build\extract\WEB-INF\lib"
+    if (-Not(Test-Path -Path $psql_jdbc_dest_path)) {
+        Copy-Item -Path $psql_jdbc_src_path -Destination $psql_jdbc_dest_path | Out-Null
+    }
+    Write-Log -Message "PostgreSQL JDBC driver copy completed."
     
     # Build the IdentityIQ war
     Invoke-Command -ScriptBlock { 
@@ -405,9 +415,12 @@ function New-IiqDeployment {
     $tomcat_url += ":8443/manager/text/deploy?path=/identityiq&war=file:$iiq_war_path"
 
     # Ensure Tomcat is running
-    $iiq_svc = Get-Service IdentityIQ
+    $server_name = hostname
+    $server_name = $server_name.ToLower()
+    $svc_name = "$server_name$TcInstanceId"
+    $iiq_svc = Get-Service $svc_name
     if (-Not ($iiq_svc.Status -eq "Running")) {
-        tomcat9 //ES//IdentityIQ | Out-Null 
+        tomcat9 //ES//$svc_name | Out-Null 
     }
 
     Invoke-IiqDeploy -TomcatUrl $tomcat_url -Cred $cred

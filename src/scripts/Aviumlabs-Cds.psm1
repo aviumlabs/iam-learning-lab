@@ -15,6 +15,64 @@
 # Tomcat Instance ID
 $TcInstanceId = "-a"
 
+# Software Packages 
+$Packages = [ordered]@{
+    "ant-contrib-1.0b3-bin.zip" = @{
+        endpoint = "$PSScriptRoot\Packages\ant-contrib-1.0b3-bin.zip";
+        halg = "MD5";
+        vhash = "c5a75fc28cbc52f09bd43b5506978601";
+        verified = $false;
+    }
+    "apache-ant-1.10.15-bin.zip" = @{
+        endpoint = "https://dlcdn.apache.org/ant/binaries/apache-ant-1.10.15-bin.zip";
+        halg = "SHA512";
+        vhash = "1de7facbc9874fa4e5a2f045d5c659f64e0b89318c1dbc8acc6aae4595c4ffaf90a7b1ffb57f958dd08d6e086d3fff07aa90e50c77342a0aa5c9b4c36bff03a9";
+        verified = $false;
+    }
+    "apache-jmeter-5.6.3.zip" = @{
+        endpoint = "https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-5.6.3.zip";
+        halg = "SHA512";
+        vhash = "387fadca903ee0aa30e3f2115fdfedb3898b102e6b9fe7cc3942703094bd2e65b235df2b0c6d0d3248e74c9a7950a36e42625fd74425368342c12e40b0163076";
+        verified = $false;
+    }
+    "apache-tomcat-9.0.104-windows-x64.zip" = @{
+        endpoint = "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.104/bin/apache-tomcat-9.0.104-windows-x64.zip";
+        halg = "SHA512";
+        vhash = "9844bf04447f41e521a6dcd84801167abcfdabc6dd608823895dd2b89e3dbba7bf48ce0c7b0c7b627ea9f9b2302c5f5ac3f96133aeeb4e6d5739f52674d2d6b7";
+        verified = $false;
+    }
+    "openjdk-21.0.2_windows-x64_bin.zip" = @{
+        endpoint = "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip";
+        halg = "SHA256";
+        vhash = "b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664";
+        verified = $false;
+    }
+    "postgresql-15.12-1-windows-x64.exe" = @{
+        endpoint = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259511";
+        halg = "SHA256";
+        vhash = "119B30D75AF7417A1FBC45B174E680C181FF06A53C8FBBAB658987035F38EA1C";
+        verified = $false;
+    }
+    "postgresql-42.7.5.jar" = @{
+        endpoint = "https://jdbc.postgresql.org/download/postgresql-42.7.5.jar";
+        halg = "SHA256";
+        vhash = "69020B3BD20984543E817393F2E6C01A890EF2E37A77DD11D6D8508181D079AB";
+        verified = $false;
+    }
+    "tomcat-native-2.0.8-openssl-3.0.14-win32-bin.zip" = @{
+        endpoint = "https://dlcdn.apache.org/tomcat/tomcat-connectors/native/2.0.8/binaries/tomcat-native-2.0.8-openssl-3.0.14-win32-bin.zip";
+        halg = "SHA512";
+        vhash = "a4a8816668f14a7461711e25cb9277534981936c9e6f8b00ae55084cb265dc1d89ad07fa508ae2e1f7832236dafafbdd9d76a313c87f34e00ecfdfe75776638a";
+        verified = $false;
+    }
+    "VSCodeSetup-x64-1.99.3.exe" = @{ 
+        endpoint = "https://update.code.visualstudio.com/1.99.3/win32-x64/stable";
+        halg = "SHA256"
+        vhash = "63c953399ba60de2bdadf767ec49daa6a7bd19bf57f61b0274b57291bdab685c";
+        verified = $false;
+    }
+}
+
 # Lab Directories
 $Directories = [ordered]@{
     "bin" = "bin\";
@@ -50,8 +108,9 @@ $TomcatUsers = [ordered]@{
 }
 
 New-Variable -Name Directories -Value $Directories -Scope Local -Force
+New-Variable -Name Packages -Value $Packages -Scope Local -Force
 New-Variable -Name SecretFiles -Value $SecretFiles -Scope Local -Force
 New-Variable -Name TomcatUsers -Value $TomcatUsers -Scope Local -Force
 New-Variable -Name TcInstanceId -Value $TcInstanceId -Scope Local -Force
 
-Export-ModuleMember -Variable Directories, SecretFiles, TomcatUsers, TcId
+Export-ModuleMember -Variable Directories, Packages, SecretFiles, TomcatUsers, TcInstanceId

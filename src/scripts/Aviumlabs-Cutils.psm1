@@ -66,6 +66,37 @@ function Get-FormattedDate {
 
 <#
 .SYNOPSIS 
+    Internal function to retrieve the package filename.
+.DESCRIPTION
+    Internal function to retrieve the package filename from Packages dictionary,
+    package dictionaries are defined at the top of this script.
+.PARAMETER Name
+    Name of the package to lookup.
+.PARAMETER Pkgs
+    The packages dictionary containing the package to be looked up.
+.EXAMPLE
+    Get-PackageName -Name "PowerShell" -Pkgs $BasePackages
+    Get-PackageName -Name "OpenJDK" -Pkgs $Packages
+#>
+function Get-PackageName {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Name,
+        [Parameter(Mandatory)]
+        [System.Collections.Hashtable]$Pkgs
+    )
+    foreach ($pkg in $Pkgs.Keys) {
+        if ( $($pkg) -Match $Name ) {
+            $filename = $($pkg)
+        }
+    }
+
+    return $filename
+}
+
+
+<#
+.SYNOPSIS 
     Internal function to get a PSCredential object.
 .DESCRIPTION
     Internal function to get a PSCredential object.
