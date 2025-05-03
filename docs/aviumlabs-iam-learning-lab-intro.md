@@ -161,7 +161,7 @@ technology stack out there today:
 * PostgreSQL 17.4  
 * Erlang 27.3.3  
 * Elixir 1.18.3  
-* Phoenix Framework 1.17.21  
+* Phoenix Framework 1.7.21  
 
 Version numbers are subject to change :wink:.
 
