@@ -15,7 +15,17 @@
 # Tomcat Instance ID
 $TcInstanceId = "-a"
 
-# Software Packages 
+# Base Packages
+$BasePackages = [ordered]@{
+    "PowerShell-7.5.1-win-x64.msi" = @{ 
+        endpoint = "https://github.com/PowerShell/PowerShell/releases/download/v7.5.1/PowerShell-7.5.1-win-x64.msi";
+        halg = "SHA256";
+        vhash = "B110ECCAF55BB53AE5E6B6DE478587ED8203570B0BDA9BD374A0998E24D4033A";
+        verified = $false;
+    }
+}
+
+# Packages 
 $Packages = [ordered]@{
     "ant-contrib-1.0b3-bin.zip" = @{
         endpoint = "$PSScriptRoot\Packages\ant-contrib-1.0b3-bin.zip";
@@ -48,15 +58,9 @@ $Packages = [ordered]@{
         verified = $false;
     }
     "postgresql-15.12-1-windows-x64.exe" = @{
-        endpoint = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259511";
+        endpoint = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259414";
         halg = "SHA256";
-        vhash = "119B30D75AF7417A1FBC45B174E680C181FF06A53C8FBBAB658987035F38EA1C";
-        verified = $false;
-    }
-    "postgresql-42.7.5.jar" = @{
-        endpoint = "https://jdbc.postgresql.org/download/postgresql-42.7.5.jar";
-        halg = "SHA256";
-        vhash = "69020B3BD20984543E817393F2E6C01A890EF2E37A77DD11D6D8508181D079AB";
+        vhash = "2dfa43460950c1aecda05f40a9262a66bc06db960445ea78921c78f84377b148";
         verified = $false;
     }
     "tomcat-native-2.0.8-openssl-3.0.14-win32-bin.zip" = @{
@@ -108,9 +112,10 @@ $TomcatUsers = [ordered]@{
 }
 
 New-Variable -Name Directories -Value $Directories -Scope Local -Force
+New-Variable -Name BasePackages -Value $BasePackages -Scope Local -Force
 New-Variable -Name Packages -Value $Packages -Scope Local -Force
 New-Variable -Name SecretFiles -Value $SecretFiles -Scope Local -Force
 New-Variable -Name TomcatUsers -Value $TomcatUsers -Scope Local -Force
 New-Variable -Name TcInstanceId -Value $TcInstanceId -Scope Local -Force
 
-Export-ModuleMember -Variable Directories, Packages, SecretFiles, TomcatUsers, TcInstanceId
+Export-ModuleMember -Variable Directories, BasePackages, Packages, SecretFiles, TomcatUsers, TcInstanceId

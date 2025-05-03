@@ -44,6 +44,27 @@ function Assert-Environment {
 
 <#
 .SYNOPSIS 
+    Internal function to get an encoded URL.
+.DESCRIPTION
+    Internal function to get an encoded URL.
+.PARAMETER Url
+    The URL to be encoded
+.EXAMPLE
+    ConvertTo-EncodedUrl -Url $Url
+    ConvertTo-EncodedUrl -Url "https://example.com/who?id=xyz"
+#>
+function ConvertTo-EncodedUrl {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Url
+    )
+    $uri = New-Object System.Uri($Url)
+    return $uri.AbsoluteUri
+}
+
+
+<#
+.SYNOPSIS 
     Internal function to get a formatted date.
 .DESCRIPTION
     Internal function to get a formatted date.
@@ -97,17 +118,17 @@ function Get-PackageName {
 
 <#
 .SYNOPSIS 
-    Internal function to get a PSCredential object.
+    Internal function to get a PSCredential.
 .DESCRIPTION
-    Internal function to get a PSCredential object.
+    Internal function to get a PSCredential.
 .PARAMETER Secret
     The password of the account.
 .PARAMETER Username
     The username of the account.
 .EXAMPLE
-    Get-PSCredentialObject -Secret $Secret -Username $Username
+    Get-PSCredential -Secret $Secret -Username $Username
 #>
-function Get-PSCredentialObject {
+function Get-PSCredential {
     param (
         [Parameter(Mandatory)]
         [string]$Secret,
@@ -115,7 +136,12 @@ function Get-PSCredentialObject {
         [string]$Username
     )
     $s_pass = ConvertTo-SecureString $Secret -AsPlainText -Force
-    return New-Object System.Management.Automation.PSCredential($Username, $s_pass)
+    $credential_params = @{
+        TypeName = 'System.Management.Automation.PSCredential'
+        ArgumentList = $Username, $s_pass
+    }
+
+    return New-Object @credential_params
 }
 
 

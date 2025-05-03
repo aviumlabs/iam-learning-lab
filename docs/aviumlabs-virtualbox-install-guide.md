@@ -1,13 +1,13 @@
-Aviumlabs VirtualBox VM Install Guide (c) by Michael Konrad
+Avium Labs VirtualBox VM Install Guide (c) by Michael Konrad
 
-Aviumlabs VirtualBox VM Install Guide is licensed under a
+Avium Labs VirtualBox VM Install Guide is licensed under a
 Creative Commons Attribution 4.0 International License.
 
 You should have received a copy of the license along with this
 work. If not, see <http://creativecommons.org/licenses/by/4.0/>
 
 
-# Aviumlabs VirtualBox VM Install Guide - Windows Server 2022
+# Avium Labs VirtualBox VM Install Guide - Windows Server 2022
 
 A guide for configuring a VirtualBox VM running Windows Server 2022.
 
@@ -25,9 +25,9 @@ Assumptions:
 
 Open VirtualBox
 
-- Select __New__
-  * Name: __Win2022__
-  * Folder: __default_path__ 
+- Select **New**
+  * Name: **Win2022**
+  * Folder: **default_path**
   * ISO Image: Browse to the Microsoft Windows ISO
   * Type:  Microsoft Windows 
   * Version: Windows 2022 (64-bit)
@@ -43,13 +43,13 @@ Select Settings
 - Select General > Advanced
   * Set Shared Clipboard > Bidirectional
 - Select System
-  * __Boot Order__
+  * **Boot Order**
   * Unselect Floppy
   * Move Floppy to bottom of list
 - Select Network
-  * Select __Adapter 1__
+  * Select **Adapter 1**
   * Attached to: NAT 
-  * Select __Adapter 2__
+  * Select **Adapter 2**
   * Select Enable Network Adapter
   * Attached to: Host-only Adapter
   * Name: VirtualBox Host-Only Ethernet Adapter
@@ -64,11 +64,12 @@ Select Settings
 
 
 ## Install Windows Server 2022
+
 From VirtualBox Manager
 - Select Win2022
 - Select Start  
 
-__Windows Server 2022__
+**Windows Server 2022**
 - Microsoft Server Operting System Setup
   * Language to install: English (United States)
   * Time and currency format: English (United States)
@@ -91,8 +92,8 @@ __Windows Server 2022__
 ...  
 - Customize settings 
   * User name: Administrator
-  * Password: __enter password__
-  * Reenter password: __enter password__
+  * Password: **enter password**
+  * Reenter password: **enter password**
   * Select Finish
 
   Login as Administrator  
@@ -110,10 +111,13 @@ Select Finish
 
 ```PowerShell
 Rename-Computer -NewName "devsrv"
+```
 
-# Restart Windows
+Restart Windows
+```PowerShell
 shutdown /r
 ```
+
 
 ## Configure Windows Time Service
 
@@ -124,6 +128,7 @@ w32tm /config /update /manualpeerlist:pool.ntp.org
 Restart-Service w32time
 w32tm /query /status
 ```
+
 
 ## Turnoff Server Manager Dashboard
 ```PowerShell
@@ -147,7 +152,8 @@ Get-NetAdapter | ForEach { Disable-NetAdapterBinding -InterfaceAlias $_.Name -Co
 
 ## Set Network Configuration
 
-Set the IP address, where InterfaceIndex matches Host-Only Adapter (192.168.56.x):  
+Set the IP address, where the `InterfaceIndex` matches the `Host-Only Adapter` 
+(192.168.56.x):  
 ```PowerShell
 New-NetIPAddress -IPAddress 192.168.56.20 -InterfaceIndex 6 -PrefixLength 24 `
 -DefaultGateway 192.168.56.1
@@ -178,14 +184,14 @@ Confirm new firewall rule:
 Get-NetFirewallRule | Where-Object Name -Like 'ICMPv4'
 ```
 
-Test ICMP from workstation:  
+Test ICMP from your computer:  
 ```shell
 ping 192.168.56.20
 ```
 
 or:  
 ```PowerShell 
-Test-NetConnection -ComputerName devsrv
+Test-NetConnection -ComputerName 192.168.56.20
 ```
 
 ## Run Windows Update
@@ -203,8 +209,9 @@ Get-WindowsUpdate -AcceptAll -Install -AutoReboot
 The `Aviumlabs-Packages.psm1` PowerShell module supports the install and 
 configuration of several packages. 
 
-__Important__ update these __ADDomain__ values defined at the top of the 
-`Aviumlabs-Packages` module prior to running `Install-BasePackages`:   
+**Important** you may want to update these **ADDomain** values defined at the 
+top of the `Aviumlabs-Packages` module prior to running `Install-BasePackages`:   
+
 * "DomainName" = "aviumlabs.test"
 * "NetbiosName" = "AVIUMLABS"
 * "RootDN" = "DC=aviumlabs,DC=test"
@@ -221,7 +228,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope CurrentUser -Force
 The `Shared Folder` is typically mounted on the Z: drive in the Windows 
 VirtualBox VM  
 ```PowerShell
-cd `z:\path\to\iam-lab-windows\src\scripts`
+cd `z:\path\to\iam-learning-lab\src\scripts`
 ```
 
 :Import the Aviumlabs-Packages module:     
@@ -229,9 +236,9 @@ cd `z:\path\to\iam-lab-windows\src\scripts`
 Import-Module .\Aviumlabs-Packages.psm1
 ```
  
-Download, install, and configure base packages and Windows features:  
-* PowerShell 7.5.1
-* Visual Studio Code 1.99.3  
+Download, install, and configure PowerShell 7 and Windows features:  
+
+* PowerShell 7.5.1 
 * Microsoft Windows OpenSSH Capability 
 * Microsoft Active Directory
 
@@ -239,16 +246,20 @@ Download, install, and configure base packages and Windows features:
 Install-BasePackages
 ```
 
-__References__
+Restart Windows
+```PowerShell
+shutdown /r
+```
+
+**References**
 * https://woshub.com/pswindowsupdate-module/
 
 
 ## Configure DNS
 
-Configure DNS Network Adapter Setting  
 Prevent this private DNS server from serving the public and loopback interfaces.  
 
-On the VirtualBox VM, Ethernet is the public interface and Ethernet 2 is the 
+On this VirtualBox VM, Ethernet is the public interface and Ethernet 2 is the 
 private network interface. Match the InterfaceIndex to public and private.  
 
 Change the domain_name variable to match your enviornment:  
@@ -258,11 +269,19 @@ $domain_name = "aviumlabs.test"
 
 ```PowerShell
 Get-DnsClient
+```
 
-# InterfaceIndexes may be different, set as required
+InterfaceIndexes may be different, set as required:
+```PowerShell
 Set-DnsClient -InterfaceIndex 13 -RegisterThisConnectionsAddress $False
+```
+```PowerShell
 Set-DnsClient -InterfaceIndex 1 -ConnectionSpecificSuffix $domain_name
+```
+```PowerShell
 Set-DnsClient -InterfaceIndex 12 -ConnectionSpecificSuffix $domain_name
+```
+```PowerShell
 Get-DnsClient
 ```
 
@@ -274,6 +293,7 @@ Get-DnsClient
 > Ethernet 2        12 $domain_name                   {}                        True             False  
 > Loopback Pse..    1  $domain_name                   {}                        True             False  
 >  
+
 
 ## Clean Up DNS
 
@@ -299,10 +319,16 @@ Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name ForestDnsZ
 Remove-DnsServerResourceRecord -ZoneName $domain_name -RRType A -Name $server_name -RecordData "10.0.2.15" -Force
 ```
 
+Review the DNS resource record changes:  
+```PowerShell
+Get-DnsServerResourceRecord -ZoneName $domain_name
+```
+
+
 ## Shutdown and Clone VM
 
 Shutdown and clone or take a snapshot of the VirtualBox VM to be able to 
 revert to an AD baseline configuration.
 
 
-__End of Windows Installation and Configuration__
+**End of Avium Labs VirtualBox VM Install**

@@ -1,20 +1,22 @@
 # Aviumlabs IAM Learning Lab
 
-`Aviumlabs IAM Learning Lab` is a self-contained environment for 
+`Avium Labs IAM Learning Lab` is a self-contained environment for 
 learning about Identity and Access Management and SailPoint IdentityIQ. 
 
 
 ## Prerequisites
 
-VirtualBox
-GitHub CLI
-GitHub Account
-Git
+You'll need a `GitHub` account and the following software installed on your
+computer prior to starting this lab.
+
+* VirtualBox
+* GitHub CLI
+* Git
 
 
 ## Getting Started
 
-Create a directory, such as `Software` on your local workstation. The 
+Create a directory, such as `Software` on your computer. The 
 `Software` directory will be mounted inside the virtual machine. 
 
 Clone this repository in the `Software` directory by creating a new private 
@@ -25,28 +27,30 @@ cd Software
 ```
 
 ```shell
-gh repo create iiq-lab-windows -c -d "Aviumlabs IAM Learning Lab" --private -p aviumlabs/iiq-lab-windows 
+gh repo create iam-learning-lab -c -d "Avium Labs IAM Learning Lab" --private -p aviumlabs/iam-learning-lab
 ```
 
 The included .gitignore file excludes the properitary SailPoint IdentityIQ files. 
 Comment out the IdentityIQ IP section for a private repository. 
 
 This lab's software components:
+
 * Windows Server 2022
 * PostgreSQl 15
 * Tomcat 9
 * Java 21
 
-Setting up `Aviumlabs IAM Learning Lab` is documented in the guides 
+Setting up `Avium Labs IAM Learning Lab` is documented in the guides 
 in the docs directory. 
 
 1. [aviumlabs-virtualbox-install-guide](./docs/aviumlabs-virtualbox-install-guide.md)
 2. [aviumlabs-iam-lab-install-guide](./docs/aviumlabs-iam-lab-install-guide.md)
 
 
-## Prerequisite Steps
+## Additional Prerequisite Software
 
-The following prequisite steps need to be completed prior to running `Install-IdentityIQ`.
+The following prequisite software needs to be downloaded and copied to your 
+**private** repository prior to running `Install-IdentityIq`.
 
 To complete the lab install, IdentityIQ needs to be downloaded from SailPoint 
 https://community.sailpoint.com - requires a SailPoint Compass account.
@@ -78,4 +82,3 @@ Copy the `identityiq-8.4.zip` file to your **private** repository to the
 
 Copy the `identityiq-8.4p2.jar` file to the **src\ssb\base\patch** 
 directory.
-

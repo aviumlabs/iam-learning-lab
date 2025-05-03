@@ -16,8 +16,11 @@
 $env:SPTARGET = "sandbox"
 
 # Standard Services Build directory
-$rel_path = Resolve-Path "$PSScriptRoot\..\ssb"
-$SsbHome = $rel_path.Path
+$abs_path = Resolve-Path "$PSScriptRoot\..\ssb"
+$SsbHome = $abs_path.Path
+
+# IdentityIQ Web Archive Path
+$IiqWarPath = "$SsbHome\build\deploy\identityiq.war"
 
 # Import common utilitiy functions
 Import-Module $PSScriptRoot\Aviumlabs-Cutils.psm1
@@ -30,18 +33,46 @@ Import-Module $PSScriptRoot\Aviumlabs-Cds.psm1
 # =============================================================================
 <#
 .SYNOPSIS 
-    Function to run an initial IdentityIQ deployment.
+    Function to get the current timeout and sessions for IdentityIQ.
 .DESCRIPTION
-    Function to run an initial IdentityIQ deployment. 
-    The Path parameter must be the same path as used when installing the 
+    Function to get the current timeout and sessions for IdentityIQ. 
+    The Path parameter must be the same path as used when installing
     packages.
 .PARAMETER Path
     Root path of the lab install, defaults to "C:\"
 .EXAMPLE
-    Install-IdentityIQ
-    Install-IdentityIQ -Path "D:\"
+    Get-IdentityIqSessions
+    Get-IdentityIqSessions -Path "D:\"
 #>
-function Install-IdentityIQ {
+function Get-IdentityIqSessions {
+    param (
+        [string]$Path = "C:\"
+    )
+    # https://{host}:{port}/manager/text/sessions?path=/identityiq
+    $tomcat_url = Get-TomcatBaseUrl
+    $tomcat_url += "sessions?path=/identityiq"
+
+    $TomcatUrl = ConvertTo-EncodedUrl -Url $tomcat_url 
+    $Cred = Get-TomcatCredential -Path $Path
+    Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
+               -Authentication Basic -Credential $Cred
+}
+
+
+<#
+.SYNOPSIS 
+    Function to run an initial IdentityIQ deployment.
+.DESCRIPTION
+    Function to run an initial IdentityIQ deployment. 
+    The Path parameter must be the same path as used when installing
+    packages.
+.PARAMETER Path
+    Root path of the lab install, defaults to "C:\"
+.EXAMPLE
+    Install-IdentityIq
+    Install-IdentityIq -Path "D:\"
+#>
+function Install-IdentityIq {
     param (
         [string]$Path = "C:\"
     )
@@ -50,9 +81,12 @@ function Install-IdentityIQ {
 
     Write-Log -Message "Building, deploying, and initializing IdentityIQ..."
     Initialize-IiqWar
+    Backup-IdentityIQWar -Path $Path -WarPath $IiqWarPath
     Initialize-IiqDatabase -Path $Path
     New-IiqDeployment -Path $Path
     Initialize-Iiq -Path $Path
+    Confirm-IiqIsRunning -Path $Path
+    Add-IiqSymlinks -Path $Path
 }
 
 
@@ -61,30 +95,180 @@ function Install-IdentityIQ {
 # =============================================================================
 <#
 .SYNOPSIS 
+    Internal function to create IdentityIQ symlinks on the Desktop.
+.DESCRIPTION
+    Internal function to create IdentityIQ symlinks on the Desktop.
+    The Path parameter must be the same path as used when installing
+    packages.
+.PARAMETER Path
+    Root path of the lab install.
+.EXAMPLE
+    Add-IiqSymlinks -Path "C:\"
+#>
+function Add-IiqSymlinks {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+    Write-Log -Message "Adding IdentityIQ symlinks to the Desktop..."
+    $desktop_path = $Path + "Users\$env:USERNAME\Desktop\"
+    $desktop_logs_path = $desktop_path + "logs"
+    $desktop_conf_path = $desktop_path + "conf"
+    $desktop_iiq_path = $desktop_path + "identityiq"
+
+    $iiq_logs_path = "$env:CATALINA_BASE\logs"
+    $iiq_conf_path = "$env:CATALINA_BASE\conf"
+    $iiq_iiq_path = "$env:CATALINA_BASE\webapps\identityiq"
+
+    # destination source
+    cmd /c mklink /D $desktop_logs_path $iiq_logs_path
+    cmd /c mklink /D $desktop_conf_path $iiq_conf_path
+    cmd /c mklink /D $desktop_iiq_path $iiq_iiq_path
+    Write-Log -Message "IdentityIQ symlinks added to the Desktop."
+}
+
+
+<#
+.SYNOPSIS 
+    Internal function to determine if IdentityIQ is running.
+.DESCRIPTION
+    Internal function to determine if IdentityIQ is running.
+    The Path parameter must be the same path as used when installing
+    packages.
+.PARAMETER Path
+    Root path of the lab install.
+.EXAMPLE
+    Assert-IiqIsRunning -Path "C:\"
+#>
+function Assert-IiqIsRunning {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+    $response = Get-TomcatWebapps -Path $Path
+    return Get-IiqStatus -Response $response
+}
+
+
+<#
+.SYNOPSIS 
     Internal function to backup and write sha256 of the IdentityIQ war.
 .DESCRIPTION
     Internal function to backup and write sha256 of the IdentityIQ war.
 .PARAMETER Path
     Root path of the lab install.
+.PARAMETER WarPath
+    The path to the web archive to be backed up.
 .EXAMPLE
     New-IiqDeployment
 #>
 function Backup-IdentityIQWar {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [Parameter(Mandatory)]
+        [string]$WarPath
+    )
     Write-Log -Message "Archiving IdentityIQ war..."
-    $iiq_war_path = "$SsbHome\build\deploy\identityiq.war"
 
     # Backup and date build
     $date = Get-FormattedDate
     $war_zip = "identityiq.zip"
     $zip_bk_path = $Path + $Directories["backups"] + "$date-$war_zip"
 
-    Compress-Archive -Path $iiq_war_path -DestinationPath $zip_bk_path | Out-Null
+    Compress-Archive -Path $WarPath -DestinationPath $zip_bk_path | Out-Null
 
     $zip_hash = Get-FileHash -Path $zip_bk_path -Algorithm "SHA256"
     $sha_content = $zip_hash.Hash + " $date-$war_zip"
     $sha_path = $zip_bk_path + ".sha256"
     Set-Content -Path $sha_path -Value $sha_content
     Write-Log -Message "IdentityIQ war archived  to $zip_bk_path."
+}
+
+
+<#
+.SYNOPSIS 
+    Internal function to confirm IdentityIQ is running.
+.DESCRIPTION
+    Internal function to confirm IdentityIQ is running and if 
+    not to start it.
+.PARAMETER Path
+    Root path of the lab install.
+.EXAMPLE
+    Confirm-IiqIsRunning -Path "C:\"
+#>
+function Confirm-IiqIsRunning {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+    Write-Log -Message "Ensuring IdentityIQ is ruuning..."
+    if (-Not (Assert-IiqIsRunning -Path $Path)) {
+        # Start a web application
+        # http://{host}:{port}/manager/text/start?path=/examples
+        $tomcat_url = Get-TomcatBaseUrl
+        $tomcat_url += "start?path=/identityiq"
+        $TomcatUrl = ConvertTo-EncodedUrl -Url $tomcat_url 
+        $Cred = Get-TomcatCredential -Path $Path
+        $response = Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
+               -Authentication Basic -Credential $Cred
+        
+        Write-Log -Message "IdentityIQ web application status..."
+        Write-Log -Message $repsonse
+    } else {
+        Write-Log -Message "IdentityIQ is running."
+    }
+}
+
+
+<#
+.SYNOPSIS 
+    Internal function to deploy IdentityIQ web archive (war).
+.DESCRIPTION
+    Internal function to deploy IdentityIQ to Apache Tomcat.
+.PARAMETER TomcatUrl
+    The Apache Tomcat text URL for deploying webapps.
+.PARAMETER Cred
+    The credential for connecting to Apache Tomcat.
+.EXAMPLE
+    Deploy-Iiq -TomcatUrl $TomcatUrl -Cred $Cred
+#>
+function Deploy-Iiq {
+    param (
+        [Parameter(Mandatory)]
+        [System.Uri]$TomcatUrl,
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PSCredential]$Cred
+    )
+    Write-Log -Message "Deploying IdentityIQ web archive..."
+    Invoke-Command -ScriptBlock {
+        Write-Progress -Activity "Deploying IdentityIQ web archive...";
+        $res = Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
+               -Authentication Basic -Credential $Cred
+    } | Out-Null
+
+    Write-Log -Message "IdentityIQ Tomcat deployment status...$res"
+}
+
+
+function Get-IiqStatus {
+    param (
+        [Parameter(Mandatory)]
+        $Response
+    )
+    #OK - Listed applications for virtual host [devsrv]
+    #/identityiq:running:2:identityiq
+    #/manager:running:0:C:/bin/apache-tomcat-9.0.104/webapps/manager
+    $match_running = '/identityiq:running:.*'
+    Write-Host "Tomcat webapps`n"
+    $status = $false
+    ForEach ($line in $Response) {
+        if ($line -Match $match_running) {
+            $status = $true
+        }
+    }
+
+    return $status
 }
 
 
@@ -109,6 +293,7 @@ function Get-PostgresUrl {
     try {
         $db_pass = Get-Secret -Path $Path -SecretFile $SecretFiles["PostgresFile"]
         $server_name = hostname
+        $server_name = $server_name.ToLower()
         return "postgresql://postgres:$db_pass@$server_name" + ":5432/postgres"
     } catch {
         $exception_name = $Error[0].Exception.GetType().FullName
@@ -149,6 +334,24 @@ function Get-Secret {
 
 <#
 .SYNOPSIS 
+    Internal function to get the Tomcat `text` URL.
+.DESCRIPTION
+    Internal function to get the Tomcat `text` URL.
+.EXAMPLE
+    Get-TomcatBaseUrl
+#>
+function Get-TomcatBaseUrl {
+    $server_name = hostname
+    $server_name = $server_name.ToLower()
+    $tomcat_url = "https://$server_name"
+    $tomcat_url += ":8443/manager/text/"
+
+    return $tomcat_url
+}
+
+
+<#
+.SYNOPSIS 
     Internal function to get the Apache Tomcat rpa credential.
 .DESCRIPTION
     Internal function to get the Apache Tomcat rpa credential.
@@ -165,13 +368,43 @@ function Get-TomcatCredential {
     try {
         $rpa_pass = Get-Secret -Path $Path -SecretFile $SecretFiles["TomcatRpaFile"]
         $rpa_user = $TomcatUsers["RpaUser"]
-        return Get-PSCredentialObject -Secret $rpa_pass -Username $TomcatUsers["RpaUser"]
+        return Get-PSCredential -Secret $rpa_pass -Username $TomcatUsers["RpaUser"]
     } catch {
         $exception_name = $Error[0].Exception.GetType().FullName
         Write-Log -Message "Exception...$exception_name"
         Write-Error $Error[0]
         Exit 1
     } 
+}
+
+
+<#
+.SYNOPSIS 
+    Internal function to get the list of currently deployed 
+    applications on Tomcat.
+.DESCRIPTION
+    Internal function to get the list of currently deployed 
+    applications on Tomcat.
+.PARAMETER Path
+    Root path of the lab install.
+.EXAMPLE
+    Get-TomcatWebapps -Path "C:\"
+#>
+function Get-TomcatWebapps {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+    # List currently deployed applications
+    # http://{host}:{port}/manager/text/list
+    $tomcat_url = Get-TomcatBaseUrl
+    $tomcat_url += "list"
+
+    $TomcatUrl = ConvertTo-EncodedUrl -Url $tomcat_url 
+    $Cred = Get-TomcatCredential -Path $Path
+    $response = Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
+               -Authentication Basic -Credential $Cred
+    return $response
 }
 
 
@@ -239,14 +472,24 @@ function Initialize-Iiq {
         Add-Content -Path $import_inits_path -Value $iiq_lcm_path
         Add-Content -Path $import_inits_path -Value $iiq_ai_path
         Add-Content -Path $import_inits_path -Value $iiq_cam_path
-        Add-Content  -Path $import_inits_path -Value $iiq_pam_path
+        Add-Content -Path $import_inits_path -Value $iiq_pam_path
     }
 
     $iiq_bat = "$iiq_wi_path\bin\iiq.bat"
 
-    Write-Log -Message "Initializing IdentityIQ services..."
-    .$iiq_bat console -f $import_inits_path | Out-Null
-    Write-Log -Message "IdentityIQ services initialization completed."
+    if (Test-Path -Path $iiq_bat) {
+        Write-Log -Message "Initializing IdentityIQ services..."
+        .$iiq_bat console -f $import_inits_path | Out-Null
+
+        if ($?) {
+            Write-Log -Message "IdentityIQ services initialization completed."
+        } else {
+            Write-Log -Message "IdentityIQ services initialization failed."
+        } 
+    } else {
+        Write-Log -Message "IdentityIQ web application not found."
+    }
+    
 }
 
 
@@ -277,8 +520,18 @@ function Initialize-IiqDatabase {
     $env:PGPASSFILE = $pgpass_path
 
     Initialize-DatabaseTables -Url $postgres_url -FilePath $create_iiq_db_path
+    if ($?) {
+        Write-Log -Message  "IdentityIQ databases initialization completed."
+    } else {
+        Write-Log -Message  "IdentityIQ databases initialization failed."
+    }
+
     Initialize-DatabaseTables -Url $postgres_url -FilePath $update_iiq_db_path
-    Write-Log -Message  "IdentityIQ databases initialized."
+    if ($?) {
+        Write-Log -Message  "IdentityIQ databases upgrade completed."
+    } else {
+        Write-Log -Message  "IdentityIQ databases upgrade failed."
+    }
 }
 
 
@@ -329,18 +582,7 @@ function Initialize-IiqWar {
             Write-Progress -Activity "Running build clean...";
             .$build clean 
         } | Out-Null
-    } else {
-        Initialize-IiqExtract
-    }
-
-    Write-Log -Message "Copying PostgreSQL JDBC driver to ssb..."
-    $jdbc_pkg = Get-PackageName -Name "postgresql-42" -Pkgs $Packages
-    $psql_jdbc_src_path = $Path + $Directories["downloads"] + $jdbc_pkg 
-    $psql_jdbc_dest_path = "$SsbHome\build\extract\WEB-INF\lib"
-    if (-Not(Test-Path -Path $psql_jdbc_dest_path)) {
-        Copy-Item -Path $psql_jdbc_src_path -Destination $psql_jdbc_dest_path | Out-Null
-    }
-    Write-Log -Message "PostgreSQL JDBC driver copy completed."
+    }    
     
     # Build the IdentityIQ war
     Invoke-Command -ScriptBlock { 
@@ -348,41 +590,13 @@ function Initialize-IiqWar {
         .$build war
     } | Out-Null
 
-    Write-Log -Message "IdentityIQ war is ready for deployment."
-    Set-Location "C:\Users\$env:USERNAME"
-}
-
-
-<#
-.SYNOPSIS 
-    Internal function to deploy IdentityIQ web archive (war).
-.DESCRIPTION
-    Internal function to deploy IdentityIQ to Apache Tomcat.
-.PARAMETER TomcatUrl
-    The Apache Tomcat text URL for deploying webapps.
-.PARAMETER Cred
-    The credential for connecting to Apache Tomcat.
-.EXAMPLE
-    Invoke-IiqDeploy -TomcatUrl $TomcatUrl -Cred $Cred
-#>
-function Invoke-IiqDeploy {
-    param (
-        [Parameter(Mandatory)]
-        [string]$TomcatUrl,
-        [Parameter(Mandatory)]
-        [string]$Cred
-    )
-    Write-Log -Message "Deploying IdentityIQ..."
-    Invoke-Command -ScriptBlock { 
-        Write-Progress -Activity "Deploying IdentityIQ web archive...";
-        Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl -Method Put -Authentication Basic -Credential $Cred
-    }
-
     if ($?) {
-        Write-Log -Message "IdentityIQ successfully deployed."
+        Write-Log -Message "IdentityIQ war build completed."
     } else {
-        Write-Log -Message "Failed to deploy IdentityIQ."
+        Write-Log -Message "IdentityIQ war build failed."
     }
+    
+    Set-Location "C:\Users\$env:USERNAME"
 }
 
 
@@ -401,27 +615,19 @@ function New-IiqDeployment {
         [Parameter(Mandatory)]
         [string]$Path
     )
-    Backup-IdentityIQWar -Path  $Path
-
-    $cred = Get-TomcatCredential -Path $Path
-
     # General command syntax
     # http://{host}:{port}/manager/text/{command}?{parameters}
-    # List currently deployed applications
-    # http://{host}:{port}/manager/text/list
+    $tomcat_url = Get-TomcatBaseUrl
+    $tomcat_url += "deploy?path=/identityiq&war=file:$IiqWarPath"
+    $enc_tc_url = ConvertTo-EncodedUrl -Url $tomcat_url
 
-    $server_name = hostname
-    $tomcat_url = "https://$server_name"
-    $tomcat_url += ":8443/manager/text/deploy?path=/identityiq&war=file:$iiq_war_path"
-
-    # Ensure Tomcat is running
-    $server_name = hostname
-    $server_name = $server_name.ToLower()
-    $svc_name = "$server_name$TcInstanceId"
+    # Ensure Tomcat is running    
+    $svc_name = "apache-$env:TC_INSTANCE"
     $iiq_svc = Get-Service $svc_name
     if (-Not ($iiq_svc.Status -eq "Running")) {
-        tomcat9 //ES//$svc_name | Out-Null 
+        tomcat9 //ES//$svc_name | Out-Null
     }
 
-    Invoke-IiqDeploy -TomcatUrl $tomcat_url -Cred $cred
+    $cred = Get-TomcatCredential -Path $Path
+    Deploy-Iiq -TomcatUrl $enc_tc_url -Cred $cred
 }
