@@ -95,6 +95,9 @@ are **two guides** that walk through the setup and deployment of
 A log of the install is captured to `aviumlabs-iam-lab-install.log` in the 
 `Documents` directory.
 
+If you find a bug or issue, plesae report it here 
+`https://github.com/aviumlabs/iam-learning-lab/issues`
+
 ### Advanced Logging Support
 
 Logs are the backbone of troubleshooting and when you have a complex system, 
