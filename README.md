@@ -1,4 +1,4 @@
-# Aviumlabs IAM Learning Lab
+# Avium Labs IAM Learning Lab
 
 `Avium Labs IAM Learning Lab` is a self-contained environment for 
 learning about Identity and Access Management and SailPoint IdentityIQ. 

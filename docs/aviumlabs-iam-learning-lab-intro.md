@@ -1,6 +1,7 @@
 # Avium Labs IAM Learning Lab
 
-I am excited to share the release of the `Avium Labs IAM Learning Lab`.
+I am excited to share the release of the `Avium Labs IAM Learning Lab` - 
+`https://github.com/aviumlabs/iam-learning-lab`. 
 
 This initial release of `iam-learning-lab` is foundational only, later releases 
 will introduce Identity and Access Lifecycle Management.
