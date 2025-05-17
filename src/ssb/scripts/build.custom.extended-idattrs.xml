@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="services.standard.build.custom.extended-idattrs.xml">
+
+	<!-- Example of Custom steps  to support extended searchable Identity
+	     attributes that are setup via the ExtendedPropertyAccessor class.
+		 
+		 This allows us to specify a large number of Identity attriubtes that
+		 are searchable but do not consume the extended_* (1...10) attributes
+		 that come Out of the Box with IdentityIQ.
+		 -->
+	<target name="extended-idattrs-config"
+	   description="Make modifications to IdentityExtended.hbm.xml to add attrs.">
+    	<replace file="${build}/extract/WEB-INF/classes/sailpoint/object/IdentityExtended.hbm.xml">
+          <replacetoken><![CDATA[access="sailpoint.persistence.ExtendedPropertyAccessor"/>]]></replacetoken>
+          <replacevalue><![CDATA[access=" sailpoint.persistence.ExtendedPropertyAccessor "/> -->
+			  
+		  <!-- Modified to support Extended Attributes.  See the build script
+		       build.custom.Example-Extend-idAttrs.xml for more details.  Note: the spaces
+          	   added below at the close tags are _relevant_ to prevent the at-build-time
+          	   search/replace from running multiple times.  As are the spaces enclosed by 
+          	   the quotes above.  Don't remove them and if you edit them test 
+          	   several build clean, then build deploy cycles.  --> 
+
+   		<property name="status" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_status_ci"  />
+		<property name="organization" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_organization_ci"  />
+		<property name="businessUnit" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_business_unit_ci"  />
+		<property name="department" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_department_ci"  />
+		<property name="jobTitle" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_job_title_ci"/>
+		<property name="position" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_position_ci"/>
+		<property name="location" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_location_ci"/>
+		<property name="phoneNumber" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_phone_number_ci"/>
+		<property name="serviceDate" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_service_date_ci"/>
+		<property name="recordDate" type="string" length="450"
+    		access="sailpoint.persistence.ExtendedPropertyAccessor"
+    		index="spt_identity_record_date_ci"/>
+			   
+		  <!-- End of Modify for Extended Attributes. ]]></replacevalue>
+		</replace>
+		<echo message="Patched file: ${build}/extract/WEB-INF/classes/sailpoint/object/IdentityExtended.hbm.xml"/>
+    </target>
+
+	<!-- The post expansion hook is called after war file is expanded to build/extract. -->
+    <target name="post.expansion.hook">
+		<!-- apply ACME's settings for extended Identity attributes. --> 
+		<echo message="Applying Identity Attributes extensions for ExtendedPropertyAccessor"/>
+		<antcall inheritall="true" target="extended-idattrs-config"/>
+		
+    </target>
+
+    <target name="post.war.hook"/>
+
+    <target name="clean"/>
+
+</project>

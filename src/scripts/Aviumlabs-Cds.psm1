@@ -45,10 +45,10 @@ $Packages = [ordered]@{
         vhash = "387fadca903ee0aa30e3f2115fdfedb3898b102e6b9fe7cc3942703094bd2e65b235df2b0c6d0d3248e74c9a7950a36e42625fd74425368342c12e40b0163076";
         verified = $false;
     }
-    "apache-tomcat-9.0.104-windows-x64.zip" = @{
-        endpoint = "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.104/bin/apache-tomcat-9.0.104-windows-x64.zip";
+    "apache-tomcat-9.0.105-windows-x64.zip" = @{
+        endpoint = "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.105/bin/apache-tomcat-9.0.105-windows-x64.zip";
         halg = "SHA512";
-        vhash = "9844bf04447f41e521a6dcd84801167abcfdabc6dd608823895dd2b89e3dbba7bf48ce0c7b0c7b627ea9f9b2302c5f5ac3f96133aeeb4e6d5739f52674d2d6b7";
+        vhash = "eea07407494f879dfd49f37ade1e5b6ce6b6c51b3a17cb48e676cbfb4f4a014ff94c6eb8a191978f6d8f80b297eb2736d93598dff7c69c89fd5427c3be6a3d4e";
         verified = $false;
     }
     "openjdk-21.0.2_windows-x64_bin.zip" = @{

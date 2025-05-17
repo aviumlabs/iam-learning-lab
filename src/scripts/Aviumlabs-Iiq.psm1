@@ -33,6 +33,52 @@ Import-Module $PSScriptRoot\Aviumlabs-Cds.psm1
 # =============================================================================
 <#
 .SYNOPSIS 
+    Function to build IdentityIQ extract.
+.DESCRIPTION
+    Function to build IdentityIQ extract.
+    The Path parameter must be the same path as used when installing
+    packages.
+.PARAMETER Path
+    Root path of the lab install, defaults to "C:\"
+.EXAMPLE
+    Build-IdentityIq
+#>
+function Build-IdentityIq {
+
+    Initialize-IiqExtract
+}
+
+
+<#
+.SYNOPSIS 
+    Function to re-deploy IdentityIQ.
+.DESCRIPTION
+    Function to re-deploy IdentityIQ.
+    The Path parameter must be the same path as used when installing
+    packages.
+.PARAMETER Path
+    Root path of the lab install, defaults to "C:\"
+.EXAMPLE
+    Deploy-IdentityIq
+    Deploy-IdentityIq -Path "D:\"
+#>
+function Deploy-IdentityIq {
+    param (
+        [string]$Path = "C:\"
+    )
+    Write-Log -Message "Confirming the operating system is supported by this module."
+    Assert-Environment
+
+    Write-Log -Message "Building and deploying IdentityIQ..."
+    Initialize-IiqWar
+    Backup-IiqWar -Path $Path -WarPath $IiqWarPath
+    New-IiqDeployment -Path $Path
+    Confirm-IiqIsRunning -Path $Path
+}
+
+
+<#
+.SYNOPSIS 
     Function to get the current timeout and sessions for IdentityIQ.
 .DESCRIPTION
     Function to get the current timeout and sessions for IdentityIQ. 
@@ -81,12 +127,66 @@ function Install-IdentityIq {
 
     Write-Log -Message "Building, deploying, and initializing IdentityIQ..."
     Initialize-IiqWar
-    Backup-IdentityIQWar -Path $Path -WarPath $IiqWarPath
+    Backup-IiqWar -Path $Path -WarPath $IiqWarPath
     Initialize-IiqDatabase -Path $Path
     New-IiqDeployment -Path $Path
     Initialize-Iiq -Path $Path
     Confirm-IiqIsRunning -Path $Path
     Add-IiqSymlinks -Path $Path
+}
+
+
+<#
+.SYNOPSIS 
+    Function to undeploy IdentityIQ.
+.DESCRIPTION
+    Function to undeploy IdentityIQ. 
+    The Path parameter must be the same path as used when installing
+    IdentityIQ.
+.PARAMETER Path
+    Root path of the lab install, defaults to "C:\"
+.EXAMPLE
+    Uninstall-IdentityIq
+    Uninstall-IdentityIq -Path "D:\"
+#>
+function Uninstall-IdentityIq {
+    param (
+        [string]$Path = "C:\"
+    )
+    Write-Log -Message "Confirming the operating system is supported by this module."
+    Assert-Environment
+
+    Backup-IiqDb -Path $Path
+
+    $Cred = Get-TomcatCredential -Path $Path
+    # https://{host}:{port}/manager/text/stop?path=/identityiq
+    $tomcat_url = Get-TomcatBaseUrl
+    $tomcat_url += "stop?path=/identityiq"
+    $TomcatUrl = ConvertTo-EncodedUrl -Url $tomcat_url
+
+    Invoke-Command -ScriptBlock { 
+        Write-Progress -Activity "Stopping IdentityIQ...";
+        $res = Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
+            -Authentication Basic -Credential $Cred
+    } | Out-Null
+
+    # https://{host}:{port}/manager/text/undeploy?path=/identityiq
+    $tomcat_url = Get-TomcatBaseUrl
+    $tomcat_url += "undeploy?path=/identityiq"
+    $TomcatUrl = ConvertTo-EncodedUrl -Url $tomcat_url 
+    
+    Invoke-Command -ScriptBlock { 
+        Write-Progress -Activity "Undeploying IdentityIQ...";
+        $res = Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
+            -Authentication Basic -Credential $Cred
+    } | Out-Null
+
+    if ($?) {
+        Write-Log -Message "IdentityIQ undeployed."
+    } else {
+        Write-Log -Message "Failed to undeploy IdentityIQ"
+        Write-Log -Message $res 
+    }
 }
 
 
@@ -152,6 +252,39 @@ function Assert-IiqIsRunning {
 
 <#
 .SYNOPSIS 
+    Internal function to backup IdentityIQ databases.
+.DESCRIPTION
+    Internal function to backup IdentityIQ databases.
+    The Path parameter must be the same path as used when installing
+    packages.
+.PARAMETER Path
+    Root path of the lab install.
+.EXAMPLE
+    Backup-IiqDbs -Path "C:\"
+#>
+function Backup-IiqDbs {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    # Backup and date databases identityiq, identityiqPlugin, identityiqah
+    $date = Get-FormattedDate
+    $iiq_bk_path = $Path + $Directories["backups"] + "$date-iiqdb.pg_dump"
+    $iiqplug_bk_path = $Path + $Directories["backups"] + "$date-iiqplugindb.pg_dump"
+    $iiqah_bk_path = $Path + $Directories["backups"] + "$date-iiqahdb.pg_dump"
+
+    Write-Log -Message "Backup IdentityIQ databases..."
+    pg_dump identityiq > $iiq_bk_path | Out-Null
+    pg_dump identityiqPlugin > $iiqplug_bk_path | Out-Null
+    pg_dump identityiqah > $iiqah_bk_path | Out-Null
+
+    Write-Log -Mesage "IdentityIQ database backup completed."
+}
+
+
+<#
+.SYNOPSIS 
     Internal function to backup and write sha256 of the IdentityIQ war.
 .DESCRIPTION
     Internal function to backup and write sha256 of the IdentityIQ war.
@@ -160,9 +293,9 @@ function Assert-IiqIsRunning {
 .PARAMETER WarPath
     The path to the web archive to be backed up.
 .EXAMPLE
-    New-IiqDeployment
+    Backup-IiqWar -Path "C:\" -WarPath $WarPath
 #>
-function Backup-IdentityIQWar {
+function Backup-IiqWar {
     param (
         [Parameter(Mandatory)]
         [string]$Path,
@@ -211,7 +344,7 @@ function Confirm-IiqIsRunning {
         $TomcatUrl = ConvertTo-EncodedUrl -Url $tomcat_url 
         $Cred = Get-TomcatCredential -Path $Path
         $response = Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
-               -Authentication Basic -Credential $Cred
+            -Authentication Basic -Credential $Cred
         
         Write-Log -Message "IdentityIQ web application status..."
         Write-Log -Message $repsonse
@@ -244,7 +377,7 @@ function Deploy-Iiq {
     Invoke-Command -ScriptBlock {
         Write-Progress -Activity "Deploying IdentityIQ web archive...";
         $res = Invoke-WebRequest -SkipCertificateCheck -Uri $TomcatUrl `
-               -Authentication Basic -Credential $Cred
+            -Authentication Basic -Credential $Cred
     } | Out-Null
 
     Write-Log -Message "IdentityIQ Tomcat deployment status...$res"
@@ -431,7 +564,7 @@ function Initialize-DatabaseTables {
     )
     Write-Log -Message "Loading database tables..."
     Invoke-Command -ScriptBlock {
-        Write-Progress -Activity "Loading database tables..."
+        Write-Progress -Activity "Loading database tables...";
         psql -f $FilePath $Url | Out-Null
     }
     Write-Log -Message "Database tables loaded."
@@ -535,6 +668,24 @@ function Initialize-IiqDatabase {
 }
 
 
+function Initialize-IiqExtendedSchema {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    $iiq_wi_path = "$env:CATALINA_BASE\webapps\identityiq\WEB-INF"
+    $env:CLASSPATH = "$iiq_wi_path\classes;$iiq_wi_path\lib\identityiq.jar"
+
+    $iiq_bat = "$iiq_wi_path\bin\iiq.bat"
+
+    Write-Log -Message "Adding extended attributes..."
+    .$iiq_bat extendedSchema 
+
+    # add_identityiq_extensions.postgresql
+}
+
+
 <#
 .SYNOPSIS 
     Internal function to build an IdentityIQ extract.
@@ -546,6 +697,7 @@ function Initialize-IiqDatabase {
 #>
 function Initialize-IiqExtract {
     $build = "$SsbHome\build.bat"
+    Set-Location $SsbHome
     # Run build clean prior to running build extract if build extract is 
     # already existing
     if (Test-Path -Path "$SsbHome\build\extract") {
@@ -557,7 +709,7 @@ function Initialize-IiqExtract {
     
     # Build the IdentityIQ extract
     Invoke-Command -ScriptBlock { 
-        Write-Progress -Activity "Building IdentityIQ extract..."
+        Write-Progress -Activity "Building IdentityIQ extract...";
         .$build 
     } | Out-Null
 }
