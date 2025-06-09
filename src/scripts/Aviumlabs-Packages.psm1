@@ -48,9 +48,9 @@ New-Variable -Name ADDoamin -Value $ADDomain -Scope Script -Force
 # =============================================================================
 <#
 .SYNOPSIS 
-    Install the prerequisite packages specified at the top of this file.
+    Install the prerequisite packages specified in the Common Data Structures file.
 .DESCRIPTION
-    Install the prerequisite packages specified at the top of this file; 
+    Install the prerequisite packages specified in the Common Data Structures file; 
     requires administrative permission.
 .PARAMETER Path
     If path is not provided, defaults to "C:\".
@@ -83,12 +83,44 @@ function Install-BasePackages {
     Install-ActiveDirectory -Path $Path
 }
 
+<#
+.SYNOPSIS 
+    Install a specific package from the package dictionary.
+.DESCRIPTION
+    Install a specific package from the package dictionary.; 
+    requires administrative permission.
+.PARAMETER Path
+    Root path of the lab install, defaults to "C:\". 
+.PARAMETER PkgName
+    The short name of the package to be installed, e.g. "python".
+.EXAMPLE
+    Install-Package -Path "C:\" -PkgName "python"
+#>
+function Install-Package {
+    param (
+        [string]$Path = "C:\",
+        [Parameter(Mandatory)]
+        [string]$PkgName
+    )
+    Write-Log -Message "Confirming this operating system is supported by this module."
+    Assert-Environment
+
+    $pkg = Get-PackageName -Name $PkgName -Pkgs $Packages
+    if ($pkg) {
+        Write-Log -Message "Installing package $pkg..."
+        Get-Package -Path $Path -Pkgs $Packages -Pkg $pkg
+        Install-SPackage -Path $Path -Pkg $pkg
+    } else {
+        Write-Log -Message "Package $PkgName not found in the package dictionary."
+    }
+}
+
 
 <#
 .SYNOPSIS 
-    Install the prerequisite packages specified at the top of this file.
+    Install the prerequisite packages specified in the Common Data Structures file.
 .DESCRIPTION
-    Install the prerequisite packages specified at the top of this file; 
+    Install the prerequisite packages specified in the Common Data Structures file; 
     requires administrative permission.
 .PARAMETER Path
     If path is not provided, defaults to "C:\". drive letter is required by the 
@@ -142,6 +174,73 @@ function Install-Packages {
     Initialize-ApacheManagerHTML -Path $Path
     Set-PermanentEnvVariables -Path $Path
     
+}
+
+
+<#
+.SYNOPSIS 
+    Update Apache Tomcat.
+.DESCRIPTION
+    Update Apache Tomcat to the latest version included in the lab.
+.PARAMETER Path
+    Root path of the lab install, defaults to "C:\".
+.EXAMPLE
+    Update-ApacheTomcat -Path "C:\"
+#>
+function Update-ApacheTomcat {
+    param (
+        [string]$Path = "C:\"
+    )
+    # - Stop running service
+    # - Backup IdentityIQ instance directory
+    # - Remove Tomcat instance
+    # - Install latest Tomcat 
+    # - Copy conf files 
+    # - Update server.xml
+    # - Test Tomcat
+    # - Install Tomcat instance
+    # - Start Tomcat instance 
+    $instance_name = "apache-"
+    $instance_name += hostname
+    $instance_name = $instance_name.ToLower()
+    $instance_name += $TcInstanceId
+    Write-Log -Message "Stopping Apache Tomcat IdentityIQ instance..."
+    tomcat9 //SS/$instance_name | Out-Null 
+
+    if ($?) {
+        Write-Log -Message "Backing up Apache Tomcat IdentityIQ instance..."
+        # Backup current Tomcat instance
+        $bk_path = $Path + $Directories["backups"]
+        $inst_path = $Path + $Directories["tomcat"]
+        $date = Get-FormattedDate
+        Compress-Archive -Path $inst_path -DestinationPath "$bk_path$date-$instance_name.zip"
+
+        Write-Log -Message "Removing Apache Tomcat IdentityIQ instance..."
+        tomcat9 //DS/$instance_name | Out-Null
+        if ($?) {
+            Write-Log -Message "Apache Tomcat IdentityIQ instance removed."
+            Write-Log -Message "Installing latest Apache Tomcat..."
+            Install-ApacheTomcat -Path $Path
+            Set-ApacheFSPermissions -Path $Path
+            Initialize-ApacheTomcat -Path $Path
+            Initialize-ApacheTomcatUsers -Path $Path
+            Initialize-ApacheManagerHTML -Path $Path
+
+            # Start the Apache Tomcat IdentityIQ instance
+            Write-Log -Message "Starting Apache Tomcat IdentityIQ instance..."
+            tomcat9 //ES/$instance_name | Out-Null
+            if ($?) {
+                Write-Log -Message "Apache Tomcat IdentityIQ instance started successfully."
+                Write-Log -Message "Apache Tomcat IdentityIQ instance updated successfully."
+            } else {
+                Write-Log -Message "Failed to start Apache Tomcat IdentityIQ instance."
+            }
+        } else {
+            Write-Log -Message "Failed to remove Apache Tomcat IdentityIQ instance."
+        }
+    } else {
+        Write-Log -Message "Failed to stop Apache Tomcat IdentityIQ instance, cannot update."
+    } 
 }
 
 
@@ -201,7 +300,7 @@ function Add-Directory {
     $item_path = $Path + $Name
 
     if (-Not(Test-Path -Path $item_path)) {
-        Write-Log -Message "Adding directory $item_path."
+        Write-Log -Message "Adding directory $item_path..."
         New-Item -Path $Path -Name $Name -ItemType Directory | Out-Null
     } else {
         Write-Log -Message "Skipping path $item_path already existing."
@@ -279,7 +378,7 @@ function Add-MemberToSecurityGroup {
     The full path of the package to be verified. 
 .PARAMETER Hash
     The verification hash.
-.PARAMETER Algorithm
+.PARAMETER Alg
     The secure hash algorithm to use for verification.
 .EXAMPLE
     Assert-Integrity -PkgPath "C:\test.zip" -Hash "ab3ed4..." -Alg "SHA256"
@@ -296,6 +395,34 @@ function Assert-Integrity {
     $dl_hash = Get-FileHash -Path $PkgPath -Algorithm $Alg
 
     return $dl_hash.Hash -eq $Hash
+}
+
+
+<#
+.SYNOPSIS 
+    Verifies if Tomcat Native has already been installed.
+.DESCRIPTION
+    Verifies if Tomcat Native has already been installed.
+.PARAMETER Path
+    The root path of the lab install, defaults to "C:\".
+.EXAMPLE
+    Assert-TomcatNative -Path "C:\"
+#>
+function Assert-TomcatNative {
+    param (
+        [string]$Path = "C:\"
+    )
+    $apache_tomcat = [string]$pkg.Split("-windows-x64.zip")
+    $apache_tomcat = $apache_tomcat.Trim()
+    $cat_home = $Path + $Directories["bin"] + $apache_tomcat
+    $cat_bin = $cat_home + "\bin"
+
+    if (Test-Path -Path "$cat_bin\openssl.exe" -And Test-Path -Path "$cat_bin\tcnative-2.dll") {
+        Write-Log -Message "Apache Tomcat Native is already installed."
+        return $true
+    }
+    
+    return $false
 }
 
 
@@ -1295,18 +1422,22 @@ function Install-ApacheTomcat {
 
         # Install Tomcat Native
         # Extract and copy files to $cat_bin: tcnative-2.dll, openssl.exe
-        $t_native = Get-PackageName -Name "tomcat-native" -Pkgs $Packages
-        if ($Packages[$t_native]['verified']) {
-            Write-Log -Message "Copy Tomcat Native files to Apache Tomcat bin directory."
-            $tn_path = $Path + $Directories["downloads"] + $t_native
-            Add-Type -Assembly System.IO.Compression.FileSystem
-            $zip_file = [IO.Compression.ZipFile]::OpenRead($tn_path)
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[1], "$cat_bin\openssl.exe", $true)
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[4], "$cat_bin\tcnative-2.dll", $true)
-            $zip_file.Dispose()
-            Write-Log -Message "Tomcat Native file copy completed."
+        if (!Assert-TomcatNative) {
+            $t_native = Get-PackageName -Name "tomcat-native" -Pkgs $Packages
+            if ($Packages[$t_native]['verified']) {
+                Write-Log -Message "Copy Tomcat Native files to Apache Tomcat bin directory."
+                $tn_path = $Path + $Directories["downloads"] + $t_native
+                Add-Type -Assembly System.IO.Compression.FileSystem
+                $zip_file = [IO.Compression.ZipFile]::OpenRead($tn_path)
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[1], "$cat_bin\openssl.exe", $true)
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[4], "$cat_bin\tcnative-2.dll", $true)
+                $zip_file.Dispose()
+                Write-Log -Message "Tomcat Native file copy completed."
+            } else {
+                Write-Log -Message "Tomcat Native not copied, package failed verification."
+            }
         } else {
-            Write-Log -Message "Tomcat Native not copied, package failed verification."
+            Write-Log -Message "Tomcat Native already installed, skipping copy."
         }
 
         # Set session environment variables
@@ -1460,6 +1591,67 @@ function Install-PowerShell {
 }
 
 
+function Install-Python {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+    # Install Python 3.13.x
+    Write-Log -Message "Installing Python..."
+    $pkg = Get-PackageName -Name "python" -Pkgs $Packages
+    if ($Packages[$pkg]['verified']) {
+        $installer = $Path + $Directories["downloads"] + $pkg
+
+        # Launch installer
+        Invoke-Command -ScriptBlock {   
+            Write-Progress -Activity "Installing Python...";
+            .$installer /quiet InstallAllUsers=1 PrependPath=1 Include_test=0
+        } | Out-Null
+        
+        if ($?) {
+            Write-Log -Message "Python install completed."
+        } else {
+            Write-Log -Message "Python install failed."
+        }
+        
+    } else {
+        Write-Log -Message "Python not installed, package failed verification."
+    }
+}
+
+
+function Install-SPackage {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [Parameter(Mandatory)]
+        [string]$Pkg
+    )
+    # Install a specific package
+    if ($Pkg.Contains("python")) {
+        Install-Python -Path $Path
+    } elseif ($Pkg.Contains("vscode")) {
+        Install-VSCode -Path $Path
+    } elseif ($Pkg.Contains("ant")) {
+        Install-ApacheAnt -Path $Path
+    } elseif ($Pkg.Contains("jmeter")) {
+        Install-ApacheJMeter -Path $Path
+    } elseif ($Pkg.Contains("tomcat")) {
+        Install-ApacheTomcat -Path $Path
+    } elseif ($Pkg.Contains("openjdk")) {
+        Install-OpenJDK -Path $Path
+    } elseif ($Pkg.Contains("openssh")) {
+        Install-OpenSSH
+    } elseif ($Pkg.Contains("postgresql")) {
+        Install-PostgreSQL -Path $Path
+    } elseif ($Pkg.Conains("powershell")) {
+        Install-PowerShell -Path $Path
+    } else {
+        Write-Log -Message "Package not recognized: $Pkg"
+    }    
+}
+
+
 function Install-VSCode {
     param (
         [Parameter(Mandatory)]
@@ -1477,7 +1669,7 @@ function Install-VSCode {
             # Launch installer
             .$installer /VERYSILENT /MERGETASKS=!runcode
 
-            Write-Log -Message "Visual Studio Code installation completed."
+            Write-Log -Message "Visual Studio Code install completed."
         } else {
             Write-Log -Message "Visual Studio Code not installed, package failed verification."
         }

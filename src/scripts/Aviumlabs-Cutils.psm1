@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$LogFile = "C:\Users\$env:USERNAME\Documents\aviumlabs-iam-lab-install.log"
+$LogFile = "$env:USERPROFILE\Documents\aviumlabs-iam-lab-install.log"
 
 <#
 .SYNOPSIS 
@@ -76,12 +76,9 @@ function ConvertTo-EncodedUrl {
 #>
 function Get-FormattedDate {
     param (
-        [string]$Format
+        [string]$Format = "yyyyMMddHHmm"
     )
-    if (-Not $Format) {
-        $Format = "yyyyMMddHHmm"
-    }
-    return $date = Get-Date -Format $Format
+    return Get-Date -Format $Format
 }
 
 
@@ -106,13 +103,11 @@ function Get-PackageName {
         [Parameter(Mandatory)]
         [System.Collections.Hashtable]$Pkgs
     )
-    foreach ($pkg in $Pkgs.Keys) {
+    ForEach ($pkg in $Pkgs.Keys) {
         if ( $($pkg) -Match $Name ) {
-            $filename = $($pkg)
+            return $($pkg)
         }
     }
-
-    return $filename
 }
 
 

@@ -63,16 +63,22 @@ $Packages = [ordered]@{
         vhash = "2dfa43460950c1aecda05f40a9262a66bc06db960445ea78921c78f84377b148";
         verified = $false;
     }
+    "python-3.13.3-amd64.exe" = @{
+        endpoint = "https://www.python.org/ftp/python/3.13.3/python-3.13.3-amd64.exe";
+        halg = "SHA256";
+        vhash = "698f2df46e1a3dd92f393458eea77bd94ef5ff21f0d5bf5cf676f3d28a9b4b6c";
+        verified = $false;
+    }
     "tomcat-native-2.0.8-openssl-3.0.14-win32-bin.zip" = @{
         endpoint = "https://dlcdn.apache.org/tomcat/tomcat-connectors/native/2.0.8/binaries/tomcat-native-2.0.8-openssl-3.0.14-win32-bin.zip";
         halg = "SHA512";
         vhash = "a4a8816668f14a7461711e25cb9277534981936c9e6f8b00ae55084cb265dc1d89ad07fa508ae2e1f7832236dafafbdd9d76a313c87f34e00ecfdfe75776638a";
         verified = $false;
     }
-    "VSCodeSetup-x64-1.99.3.exe" = @{ 
-        endpoint = "https://update.code.visualstudio.com/1.99.3/win32-x64/stable";
+    "VSCodeSetup-x64-1.100.2.exe" = @{ 
+        endpoint = "https://update.code.visualstudio.com/1.100.2/win32-x64/stable";
         halg = "SHA256"
-        vhash = "63c953399ba60de2bdadf767ec49daa6a7bd19bf57f61b0274b57291bdab685c";
+        vhash = "8249a4a4a9e73f34b6f4f4d51481d1a7d547c2c55560e45482d7d8b23017c646";
         verified = $false;
     }
 }
