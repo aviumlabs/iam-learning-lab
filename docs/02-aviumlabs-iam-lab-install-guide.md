@@ -97,11 +97,18 @@ Run the installer:
 Install-IdentityIQ
 ```
 
+If you are installing this lab after v0.9.0, additionally run the following 
+command to extend the Identity schema:
+```PowerShell
+Install-IiqExtendedSchema
+```
+
 After the deployment has completed open `https://devsrv:8443/identityiq.`
 
 Login with the standard administrator account `spadmin`.
 
 **End of Avium Labs IAM Learning Lab Install**
+
 
 <a name="iiq-build-info" />  
 

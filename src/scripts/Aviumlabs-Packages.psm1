@@ -28,7 +28,7 @@ $ADDomain = [ordered]@{
     "RootDN" = "DC=aviumlabs,DC=test";
     "ServerName" = "devsrv.aviumlabs.test";
     "Locality" = "Washington";
-    "Organization" = "Aviumlabs";
+    "Organization" = "Avium Labs";
     "Country" = "US";
     "WorkforceOU" = "Workforce";
     "ServiceOU" = "ServiceAccounts";
@@ -184,12 +184,16 @@ function Install-Packages {
     Update Apache Tomcat to the latest version included in the lab.
 .PARAMETER Path
     Root path of the lab install, defaults to "C:\".
+.PARAMETER InstanceId
+    The identifier of a specific Tomcat instance, defaults to $TcInstanceId.
+    $TcInstanceId is defined in the Aviumlabs-Cds.psm1 script.
 .EXAMPLE
-    Update-ApacheTomcat -Path "C:\"
+    Update-ApacheTomcat -Path "D:\" -InstanceId "-b"
 #>
 function Update-ApacheTomcat {
     param (
-        [string]$Path = "C:\"
+        [string]$Path = "C:\",
+        [string]$InstanceId = $TcInstanceId
     )
     # - Stop running service
     # - Backup IdentityIQ instance directory
@@ -200,46 +204,47 @@ function Update-ApacheTomcat {
     # - Test Tomcat
     # - Install Tomcat instance
     # - Start Tomcat instance 
-    $instance_name = "apache-"
-    $instance_name += hostname
-    $instance_name = $instance_name.ToLower()
-    $instance_name += $TcInstanceId
-    Write-Log -Message "Stopping Apache Tomcat IdentityIQ instance..."
-    tomcat9 //SS/$instance_name | Out-Null 
+    $svc_name = Get-TomcatServiceName -InstanceId $InstanceId
+    Write-Log -Message "Stopping Apache Tomcat instance..."
+    tomcat9 //SS/$svc_name | Out-Null 
 
     if ($?) {
-        Write-Log -Message "Backing up Apache Tomcat IdentityIQ instance..."
+        Write-Log -Message "Backing up Apache Tomcat instance home..."
         # Backup current Tomcat instance
         $bk_path = $Path + $Directories["backups"]
         $inst_path = $Path + $Directories["tomcat"]
+        $inst_name = Get-TomcatInstanceName
         $date = Get-FormattedDate
-        Compress-Archive -Path $inst_path -DestinationPath "$bk_path$date-$instance_name.zip"
+        Compress-Archive -Path $inst_path -DestinationPath "$bk_path$date-$inst_name.zip"
 
-        Write-Log -Message "Removing Apache Tomcat IdentityIQ instance..."
-        tomcat9 //DS/$instance_name | Out-Null
+        Write-Log -Message "Removing Apache Tomcat instance..."
+        tomcat9 //DS/$svc_name | Out-Null
         if ($?) {
-            Write-Log -Message "Apache Tomcat IdentityIQ instance removed."
-            Write-Log -Message "Installing latest Apache Tomcat..."
+            Write-Log -Message "Apache Tomcat instance removed."
+            $pkg = Get-PackageName -Name "apache-tomcat" -Pkgs $Packages
+            Get-Package -Path $Path -Pkgs $Packages -Pkg $pkg
             Install-ApacheTomcat -Path $Path
             Set-ApacheFSPermissions -Path $Path
             Initialize-ApacheTomcat -Path $Path
             Initialize-ApacheTomcatUsers -Path $Path
             Initialize-ApacheManagerHTML -Path $Path
 
-            # Start the Apache Tomcat IdentityIQ instance
-            Write-Log -Message "Starting Apache Tomcat IdentityIQ instance..."
-            tomcat9 //ES/$instance_name | Out-Null
-            if ($?) {
-                Write-Log -Message "Apache Tomcat IdentityIQ instance started successfully."
-                Write-Log -Message "Apache Tomcat IdentityIQ instance updated successfully."
-            } else {
-                Write-Log -Message "Failed to start Apache Tomcat IdentityIQ instance."
+            # Start the Apache Tomcat instance
+            if (-Not (Assert-TomcatIsRunning)) {
+                Write-Log -Message "Starting Apache Tomcat instance..."
+                tomcat9 //ES/$svc_name | Out-Null
+                if ($?) {
+                    Write-Log -Message "Apache Tomcat instance started successfully."
+                    Write-Log -Message "Apache Tomcat instance updated successfully."
+                } else {
+                    Write-Log -Message "Failed to start Apache Tomcat instance."
+                }
             }
         } else {
-            Write-Log -Message "Failed to remove Apache Tomcat IdentityIQ instance."
+            Write-Log -Message "Failed to remove Apache Tomcat instance."
         }
     } else {
-        Write-Log -Message "Failed to stop Apache Tomcat IdentityIQ instance, cannot update."
+        Write-Log -Message "Failed to stop Apache Tomcat instance, cannot update."
     } 
 }
 
@@ -398,6 +403,21 @@ function Assert-Integrity {
 }
 
 
+function Assert-PathInEnv {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+    
+    $regex_path = [regex]::Escape($Path)
+    if ($env:Path -Split ';' | Where-Object {$_ -Match "^$regex_path\\?"}) {
+        return $true
+    }
+
+    return $false
+}
+
+
 <#
 .SYNOPSIS 
     Verifies if Tomcat Native has already been installed.
@@ -497,10 +517,8 @@ function Get-Package {
         [Parameter(Mandatory)]
         [System.Collections.Hashtable]$Pkgs
     )
-    $dl_path = $Path + $Directories["downloads"]
-    Set-Location -Path $dl_path
-
     $download = @{
+        Path = $Path
         FileName = $Pkg
         Uri = $($Pkgs[$Pkg]['endpoint'])
     }
@@ -795,10 +813,10 @@ function Initialize-ADServiceAccountsGroups {
 .PARAMETER Path
     Root path of the lab installation.
 .PARAMETER InstanceId
-    The name of the instance to configure, defaults to <hostname>-a.
+    The id of the instance to configure.
 .EXAMPLE
     Initialize-ApacheTomcat -Path "C:\" 
-    Initialize-ApacheTomcat -Path "C:\" -InstanceId "devsrv-b"
+    Initialize-ApacheTomcat -Path "C:\" -InstanceId "-b"
 #>
 function Initialize-ApacheTomcat {
     param (
@@ -806,14 +824,8 @@ function Initialize-ApacheTomcat {
         [string]$Path,
         [string]$InstanceId
     )
-    if (-Not $InstanceId) {
-        $instance_name = hostname
-        $instance_name = $instance_name.ToLower()
-        $instance_name += $TcInstanceId
-    } else {
-        $instance_name = $InstanceId
-    }
-    $env:TC_INSTANCE = $instance_name
+    $instance_name = Get-TomcatInstanceName -Id $InstanceId
+
     Write-Log -Message "Configuring Apache Tomcat..."
     Add-CatBaseDirectories
     # Harden Tomcat
@@ -833,43 +845,62 @@ function Initialize-ApacheTomcat {
 
     # Configure CATALINA_BASE
     Write-Log -Message "Configure CATALINA_BASE..."
-    Copy-Item -Path "$env:CATALINA_HOME\bin\tomcat-juli.jar" -Destination "$env:CATALINA_BASE\bin"
-    Copy-Item -Path "$env:CATALINA_HOME\conf\server.xml" -Destination "$env:CATALINA_BASE\conf"
-    Copy-Item -Path "$env:CATALINA_HOME\conf\web.xml" -Destination "$env:CATALINA_BASE\conf"
-    Copy-Item -Path "$env:CATALINA_HOME\conf\tomcat-users.xml" -Destination "$env:CATALINA_BASE\conf"
-    Copy-Item -Path "$env:CATALINA_HOME\conf\logging.properties" -Destination "$env:CATALINA_BASE\conf"
+    Copy-Item -Path "$env:CATALINA_HOME\bin\tomcat-juli.jar" -Destination "$env:CATALINA_BASE\bin" -Force
+    Copy-Item -Path "$env:CATALINA_HOME\conf\server.xml" -Destination "$env:CATALINA_BASE\conf" -Force
+    Copy-Item -Path "$env:CATALINA_HOME\conf\web.xml" -Destination "$env:CATALINA_BASE\conf" -Force
+    Copy-Item -Path "$env:CATALINA_HOME\conf\tomcat-users.xml" -Destination "$env:CATALINA_BASE\conf" -Force
+    Copy-Item -Path "$env:CATALINA_HOME\conf\logging.properties" -Destination "$env:CATALINA_BASE\conf" -Force
     Write-Log -Message "CATALINA_BASE configuration completed."
 
     # Tomcat TLS Certificate
-    Write-Log -Message "Generating Tomcat keystore..."
-    $key_alias = $ADDomain["ServerName"]
-    $locality = $ADDomain["Locality"]
-    $org = $ADDomain["Organization"]
-    $country = $ADDomain["Country"]
-    $dname = "CN=$key_alias,L=$locality,O=$org,C=$country"
     $keystore_path = "$env:CATALINA_BASE\conf\tomcat.jks"
-    $keystore_pass = New-RandomPassword
-    $keystore_filename = $SecretFiles["KeyStoreFile"]
-    Save-RandomPassword -Path $Path -Name $keystore_filename -Secret $keystore_pass
+    $key_alias = $ADDomain["ServerName"]
+    if (Test-Path -Path $keystore_path) {
+        # If the keystore already exists, skip generation
+        Write-Log -Message "Tomcat keystore $keystore_path already exists, skipping generation."
+        $keystore_pass = Get-Secret -Path $Path -SecretFile $SecretFiles["KeyStoreFile"]
+        Write-Log -Message "Using existing keystore password."
+        
+        # Ensure the keystore is valid
+        keytool -list -keystore $keystore_path -storepass $keystore_pass | Out-Null
+        if ($?) {
+            Write-Log -Message "Tomcat keystore is valid."
+        } else {
+            Write-Log -Message "Tomcat keystore is invalid, please regenerate it."
+        }
+    } else {
+        # Generate a keystore and private/public key pair for TLS communication
+        Write-Log -Message "Generating Tomcat keystore..."
+        $locality = $ADDomain["Locality"]
+        $org = $ADDomain["Organization"]
+        $country = $ADDomain["Country"]
+        $dname = "CN=$key_alias,L=$locality,O=$org,C=$country"
+        $keystore_pass = New-RandomPassword
+        $keystore_filename = $SecretFiles["KeyStoreFile"]
+        Save-RandomPassword -Path $Path -Name $keystore_filename -Secret $keystore_pass
 
-    # Generate the keystore and private/public key pair for TLS communication
-    keytool -genkeypair -keyalg EC -groupname secp384r1 -alias $key_alias -dname $dname `
-    -validity 180 -keystore $keystore_path -storepass $keystore_pass
-    Write-Log -Message "Tomcat keystore $keystore_path generated."
-
-    Write-Log  -Message "Opening inbound Apache Tomcat TLS port 8443..."
+        # Generate the keystore and private/public key pair for TLS communication
+        keytool -genkeypair -keyalg EC -groupname secp384r1 -alias $key_alias -dname $dname `
+        -validity 180 -keystore $keystore_path -storepass $keystore_pass
+        Write-Log -Message "Tomcat keystore $keystore_path generated."
+    }
+    
     # Open the Apache Tomcat inbound TLS port 8443
-    New-NetFirewallRule -Name "Tomcat TLS" -Enabled True `
-    -DisplayName "Tomcat TLS port 8443 inbound allow" -Direction Inbound `
-    -Protocol TCP -LocalPort 8443 -RemoteAddress LocalSubnet -Action Allow `
-    -Description "Tomcat Transport Layer Security Allow on Port 8443" | Out-Null
-    Write-Log -Message "Apache Tomcat port 8443 opened."
+    if (!(Get-NetFirewallRule -Name "Tomcat TLS" -ErrorAction SilentlyContinue | Select-Object Name, Enabled)) {
+        Write-Log  -Message "Opening inbound Apache Tomcat TLS port 8443..."
+        New-NetFirewallRule -Name "Tomcat TLS" -Enabled True `
+        -DisplayName "Tomcat TLS port 8443 inbound allow" -Direction Inbound `
+        -Protocol TCP -LocalPort 8443 -RemoteAddress LocalSubnet -Action Allow `
+        -Description "Tomcat Transport Layer Security Allow on Port 8443" | Out-Null
+        Write-Log -Message "Apache Tomcat port 8443 opened."
+    } else {
+        Write-Log -Message "Firewall Rule 'Tomcat TLS' already existing."
+    }
 
     Write-Log -Message "Backing up Apache Tomcat CATALINA_BASE\conf..."
     $src_path = "$env:CATALINA_BASE\conf\*"
     $date = Get-FormattedDate
     $bk_path = $Path + $Directories["backups"] + "$date-cat-base-conf.zip"
-
     Compress-Archive -Path $src_path -DestinationPath $bk_path | Out-Null
     Write-Log -Message "Apache Tomcat CATALINA_BASE\conf backup completed."
 
@@ -950,7 +981,7 @@ function Initialize-ApacheTomcat {
     # Install Tomcat Service
     Write-Log -Message "Installing Apache Tomcat Windows service..."
     $svc_installer = "$env:CATALINA_HOME\bin\service.bat"
-    $svc_name = "apache-$instance_name"
+    $svc_name = Get-TomcatServiceName -Id $InstanceId
     .$svc_installer install $svc_name | Out-Null
     Write-Log -Message "Apache Tomcat Windows service installed."
 
@@ -968,10 +999,12 @@ function Initialize-ApacheTomcat {
         $jvm_min = 256
     }
 
-    # Create temp softlink to the logs directory, 
+    # Create temp softlink to the logs directory
     $temp_path = "$env:CATALINA_BASE\temp"
     $logs_path = "$env:CATALINA_BASE\logs"
-    cmd /c mklink /D $temp_path $logs_path
+    if (-Not (Test-Path -Path $temp_path)) {
+        cmd /c mklink /D $temp_path $logs_path
+    }
 
     $svc_user = $ADDomain["NetbiosName"] + "\" + $ADDomain["TomcatUser"]
     $std_out_filename = $instance_name + "-iiq-stdout.log"
@@ -979,11 +1012,17 @@ function Initialize-ApacheTomcat {
 
     Write-Log "Updating Apache Tomcat Windows service..."
     # Update Tomcat Service
+    $svc_pass_path = $Path + $Directories["secrets"] + $SecretFiles["TomcatSvcFile"]
+    if (Test-Path -Path $svc_pass_path) {
+        $svc_pass = Get-Secret -Path $Path -SecretFile $SecretFiles["TomcatSvcFile"]
+    } else {
+        $svc_pass = $ADDomain["TomcatPass"] 
+    }
     tomcat9 //US//$svc_name --Description "Apache Tomcat IdentityIQ Instance" `
     --JvmMs $jvm_min --JvmMx $jvm_max ++JvmOptions9 --add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED `
     --LogPrefix "$instance_name-common-daemons" `
     --ServiceUser $svc_user `
-    --ServicePassword $ADDomain["TomcatPass"] `
+    --ServicePassword $svc_pass `
     --StdOutput $std_out_filename `
     --StdError $std_err_filename | Out-Null
     Write-Log -Message "Apache Tomcat Windows service update completed."
@@ -1006,23 +1045,30 @@ function Initialize-ApacheTomcat {
     .$tester > $config_log 2>&1
     Write-Log "Apache Tomcat config test report generated."
 
-    Write-Log "Adding Apache Tomcat manager application..."
     $mgr_base_path = "$env:CATALINA_BASE\conf\Catalina\"
-    Add-Directory -Path $mgr_base_path -Name $server_name
+    if (-Not (Test-Path -Path $mgr_base_path)) {
+        Write-Log "Adding Apache Tomcat manager application..."
+        Add-Directory -Path $mgr_base_path -Name $server_name
 
-    $manager_xml_path = $mgr_base_path + "$server_name\manager.xml"
-    $manager_xml_content = @"
+        $manager_xml_path = $mgr_base_path + "$server_name\manager.xml"
+        if (-Not (Test-Path -Path $manager_xml_path)) {
+            $manager_xml_content = 
+@"
     <Context privileged="true" antiResourceLocking="false"
-             docBase="`${catalina.home}/webapps/manager">
-      <CookieProcessor className="org.apache.tomcat.util.http.Rfc6265CookieProcessor"
-                       sameSiteCookies="strict" />
-      <Valve className="org.apache.catalina.valves.RemoteAddrValve"
-             allow="127\.\d+\.\d+\.\d+|192\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" />
-      <Manager sessionAttributeValueClassNameFilter="java\.lang\.(?:Boolean|Integer|Long|Number|String)|org\.apache\.catalina\.filters\.CsrfPreventionFilter\$LruCache(?:\$1)?|java\.util\.(?:Linked)?HashMap"/>
+            docBase="`${catalina.home}/webapps/manager">
+    <CookieProcessor className="org.apache.tomcat.util.http.Rfc6265CookieProcessor"
+                    sameSiteCookies="strict" />
+    <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+            allow="127\.\d+\.\d+\.\d+|192\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" />
+    <Manager sessionAttributeValueClassNameFilter="java\.lang\.(?:Boolean|Integer|Long|Number|String)|org\.apache\.catalina\.filters\.CsrfPreventionFilter\$LruCache(?:\$1)?|java\.util\.(?:Linked)?HashMap"/>
     </Context>
 "@
-    Set-Content -Path $manager_xml_path -Value $manager_xml_content
-    Write-Log "Apache Tomcat manager application added."
+            Set-Content -Path $manager_xml_path -Value $manager_xml_content
+            Write-Log "Apache Tomcat manager application added."
+        }
+    } else {
+        Write-Log "Apache Tomcat manager application already exists."
+    }
 
     Write-Log -Message "Logging Tomcat version..."
     $log_version = $Path + $Directories["backups"] + "$date-tomcat-version.log"
@@ -1056,7 +1102,7 @@ function Initialize-ApacheManagerHTML {
     Write-Log -Message "Backing up Apache Tomcat manager web.xml..."
     $manager_web_xml_path = "$env:CATALINA_HOME\webapps\manager\WEB-INF\web.xml"
     $date = Get-FormattedDate
-    $bk_path = $Path + $Directories["backups"] + "manager-web-xml.zip"
+    $bk_path = $Path + $Directories["backups"] + "$date-manager-web-xml.zip"
 
     Compress-Archive -Path $manager_web_xml_path -DestinationPath $bk_path | Out-Null
     Write-Log -Message "Apache Tomcat manager web.xml backup completed."
@@ -1107,7 +1153,7 @@ function Initialize-ApacheTomcatUsers {
      Write-Log -Message "Backing up Apache Tomcat tomcat-users.xml..."
      $tomcat_users_xml_path = "$env:CATALINA_BASE\conf\tomcat-users.xml"
      $date = Get-FormattedDate
-     $bk_path = $Path + $Directories["backups"] + "tomcat-users-xml.zip"
+     $bk_path = $Path + $Directories["backups"] + "$date-tomcat-users-xml.zip"
  
      Compress-Archive -Path $tomcat_users_xml_path -DestinationPath $bk_path | Out-Null
      Write-Log -Message "Apache Tomcat tomcat-users.xml backup completed."
@@ -1123,17 +1169,42 @@ function Initialize-ApacheTomcatUsers {
     $rpa_id = $TomcatUsers["RpaUser"]
     $jmx_id = $TomcatUsers["JmxUser"]
 
-    $manager_pass = New-RandomPassword
-    $mgr_pass_filename = $SecretFiles["TomcatManagerFile"]
-    Save-RandomPassword -Path $Path -Name $mgr_pass_filename -Secret $manager_pass
+    # Make re-entrant for upgrade flexibility
+    $mgr_pass_path = $Path + $Directories["secrets"] + $SecretFiles["TomcatManagerFile"]
+    if (Test-Path -Path $mgr_pass_path) {
+        Write-Log -Message "Apache Tomcat manager password already exists, skipping generation."
+        $manager_pass = Get-Secret -Path $Path -SecretFile $SecretFiles["TomcatManagerFile"]
+        Write-Log -Message "Using existing manager password."
+    } else {
+        Write-Log -Message "Generating Apache Tomcat manager password..."
+        $manager_pass = New-RandomPassword
+        $mgr_pass_filename = $SecretFiles["TomcatManagerFile"]
+        Save-RandomPassword -Path $Path -Name $mgr_pass_filename -Secret $manager_pass
+    }
 
-    $rpa_pass = New-RandomPassword
-    $rpa_pass_filename = $SecretFiles["TomcatRpaFile"]
-    Save-RandomPassword -Path $Path -Name $rpa_pass_filename -Secret $rpa_pass
-
-    $jmx_pass = New-RandomPassword
-    $jmx_pass_filename = $SecretFiles["TomcatJmxFile"]
-    Save-RandomPassword -Path $Path -Name $jmx_pass_filename -Secret $jmx_pass
+    $rpa_pass_path = $Path + $Directories["secrets"] + $SecretFiles["TomcatRpaFile"]
+    if (Test-Path -Path $rpa_pass_path) {
+        Write-Log -Message "Apache Tomcat RPA password already exists, skipping generation."
+        $rpa_pass = Get-Secret -Path $Path -SecretFile $SecretFiles["TomcatRpaFile"]
+        Write-Log -Message "Using existing RPA password."
+    } else {
+        Write-Log -Message "Generating Apache Tomcat RPA password..."
+        $rpa_pass = New-RandomPassword
+        $rpa_pass_filename = $SecretFiles["TomcatRpaFile"]
+        Save-RandomPassword -Path $Path -Name $rpa_pass_filename -Secret $rpa_pass
+    }
+    
+    $jmx_pass_path = $Path + $Directories["secrets"] + $SecretFiles["TomcatJmxFile"]
+    if (Test-Path -Path $jmx_pass_path) {
+        Write-Log -Message "Apache Tomcat JMX password already exists, skipping generation."
+        $jmx_pass = Get-Secret -Path $Path -SecretFile $SecretFiles["TomcatJmxFile"]
+        Write-Log -Message "Using existing JMX password."
+    } else {
+        Write-Log -Message "Generating Apache Tomcat JMX password..."
+        $jmx_pass = New-RandomPassword
+        $jmx_pass_filename = $SecretFiles["TomcatJmxFile"]
+        Save-RandomPassword -Path $Path -Name $jmx_pass_filename -Secret $jmx_pass
+    }
 
     # Append the JMX user credentials and role to the standard users
     $match_robot = '<user username="robot".*/>'
@@ -1327,7 +1398,7 @@ function Install-ApacheAnt {
         $ant_contrib = Get-PackageName -Name "ant-contrib" -Pkgs $Packages
         if ($Packages[$ant_contrib]['verified']) {
             Write-Log -Message "Copy Ant Contrib jar to Apache Ant lib directory."
-            $ant_contrib_path = $Path + $Directories['downloads'] + $ant_contrib
+            $ant_contrib_path = $Path + $Directories["downloads"] + $ant_contrib
             $ant_lib_path = "$env:ANT_HOME\lib"
             Add-Type -Assembly System.IO.Compression.FileSystem
             $zip_file = [IO.Compression.ZipFile]::OpenRead($ant_contrib_path)
@@ -1422,25 +1493,27 @@ function Install-ApacheTomcat {
 
         # Install Tomcat Native
         # Extract and copy files to $cat_bin: tcnative-2.dll, openssl.exe
-        if (!Assert-TomcatNative) {
-            $t_native = Get-PackageName -Name "tomcat-native" -Pkgs $Packages
-            if ($Packages[$t_native]['verified']) {
-                Write-Log -Message "Copy Tomcat Native files to Apache Tomcat bin directory."
-                $tn_path = $Path + $Directories["downloads"] + $t_native
-                Add-Type -Assembly System.IO.Compression.FileSystem
-                $zip_file = [IO.Compression.ZipFile]::OpenRead($tn_path)
-                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[1], "$cat_bin\openssl.exe", $true)
-                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[4], "$cat_bin\tcnative-2.dll", $true)
-                $zip_file.Dispose()
-                Write-Log -Message "Tomcat Native file copy completed."
-            } else {
-                Write-Log -Message "Tomcat Native not copied, package failed verification."
-            }
+        $t_native = Get-PackageName -Name "tomcat-native" -Pkgs $Packages
+        Get-Package -Path $Path -Pkg $t_native -Pkgs $Packages
+        if ($Packages[$t_native]['verified']) {
+            Write-Log -Message "Copy Tomcat Native files to Apache Tomcat bin directory."
+            $tn_path = $Path + $Directories["downloads"] + $t_native
+            Add-Type -Assembly System.IO.Compression.FileSystem
+            $zip_file = [IO.Compression.ZipFile]::OpenRead($tn_path)
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[1], "$cat_bin\openssl.exe", $true)
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip_file.Entries[4], "$cat_bin\tcnative-2.dll", $true)
+            $zip_file.Dispose()
+            Write-Log -Message "Tomcat Native file copy completed."
         } else {
-            Write-Log -Message "Tomcat Native already installed, skipping copy."
+            Write-Log -Message "Tomcat Native not copied, package failed verification."
         }
 
         # Set session environment variables
+        if ($env:CATALINA_HOME) {
+            if (! ($env:CATALIINA_HOME -Eq $cat_home)) {
+                Remove-PathInEnv -Path "$env:CATALINA_HOME\bin"
+            }
+        }
         $env:CATALINA_HOME = $cat_home
         $env:PATH = "$env:PATH;$cat_bin"
         $env:CATALINA_BASE = $cat_base
@@ -1530,6 +1603,7 @@ function Install-PostgreSQL {
 
         # Update servername and postgres password in .pgpass file
         $server_name = hostname
+        $server_name = $server_name.ToLower()
         $pgpass_path = "$PSScriptRoot" + "\.pgpass"
         $dest_pgpass_path = $Path + $Directories["secrets"] 
         Copy-Item -Path $pgpass_path -Destination $dest_pgpass_path
@@ -1555,13 +1629,27 @@ function Install-PostgreSQL {
         $env:PSQL_HOME = $bin_path
         $env:PATH = "$env:PATH;$bin_path"
 
-        # C:\apps\postgresql\15\data\pg_hba.conf
-
         # Set firwall rule
         New-NetFirewallRule -Name "PostgreSQL Allow" -Enabled True `
         -DisplayName "PostgreSQL TCP 5432 Inbound Allow" -Direction Inbound `
         -Protocol TCP -LocalPort 5432 -RemoteAddress LocalSubnet -Action Allow `
         -Description "PostgreSQL TCP 5432 Inbound Allow" | Out-Null
+
+        # Update pg_hba.conf to allow additional local connections
+        # C:\apps\postgresql\15\data\pg_hba.conf
+        # IPv4 local connections:
+        # host    all             all             127.0.0.1/32            scram-sha-256
+        $pg_hba_path = "$data_path\pg_hba.conf"
+        $match_term = '(# IPv4 local connections:)'
+        $append_term = "$1`nhost`tall`t`t`t`tall`t`t`t`t192.168.56.0/24`t`t`tscram-sha-256"
+        ((Get-Content -Path $pg_hba_path -Raw) -Replace $match_term, $append_term) `
+        | Set-Content -Path $pg_hba_path 
+
+        $match_term = '(# IPv4 local connections:)'
+        $append_term = "$1`nhost`tall`t`t`t`tall`t`t`t`t10.0.2.0/24`t`t`t`tscram-sha-256"
+        ((Get-Content -Path $pg_hba_path -Raw) -Replace $match_term, $append_term) `
+        | Set-Content -Path $pg_hba_path 
+
         Write-Log -Message "PostgreSQL installation completed."
     } else {
         Write-Log -Message "PostgreSQL not installed, package failed verification."
@@ -1684,23 +1772,35 @@ function Install-VSCode {
     Internal function to download a specific file.
 .DESCRIPTION
     Download the file in the Uri to the file specified in FileName.
+.PARAMETER Path
+    The root path of the lab install.
 .PARAMETER FileName
     The name of the file to be saved. 
 .PARAMETER Uri
     The uniform resource indicator of the file to be downloaded.
 .EXAMPLE
-    Invoke-Downloadd -FileName "test.zip" -Uri "https://test.com/downloads/test.zip"
+    Invoke-Download -Path "C:\" -FileName "test.zip" -Uri "https://test.com/downloads/test.zip"
 #>
 function Invoke-Download {
     param (
+        [Parameter(Mandatory)]
+        [string]$Path,
         [Parameter(Mandatory)]
         [string]$FileName,
         [Parameter(Mandatory)]
         [string]$Uri
     )
-    Write-Log -Message "Downloading $FileName..."
-    $res = Invoke-WebRequest -Uri $Uri -OutFile $FileName -PassThru
-
+    $dl_path = $Path + $Directories["downloads"]
+    $file_path = $dl_path + $FileName
+    Set-Location -Path $dl_path
+    if (! (Test-Path -Path $FileName)) {
+        Write-Log -Message "Downloading $FileName..."
+        $res = Invoke-WebRequest -Uri $Uri -OutFile $FileName -PassThru
+    } else {
+        Write-Log -Message "$FileName already exists, skipping download."
+        $res = $true
+    }
+    
     return $res
 }
 
@@ -1832,6 +1932,28 @@ function New-RandomPassword {
 
 <#
 .SYNOPSIS 
+    Internal function to remove a path from $env:PATH.
+.DESCRIPTION
+    Internal function to remove a path from $env:PATH.
+.PARAMETER Path
+    The path to be removed.
+.EXAMPLE
+    Remove-PathInEnv -Path "$env:CATALINA_HOME\bin"
+#>
+function Remove-PathInEnv {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path   
+    )
+
+    $regex_path = [regex]::Escape($Path)
+    $env_path = $env:PATH -Split ';' | Where-Object {$_ -NotMatch "^$regex_path\\?"}
+    $env:PATH = $env_path -Join ';'
+}
+
+
+<#
+.SYNOPSIS 
     Internal function to save a generated random password to file.
 .DESCRIPTION
     Internal function to save a generated random password to file.
@@ -1843,8 +1965,8 @@ function New-RandomPassword {
 .PARAMETER Secret
     The random generated password to be saved to the file.
 .EXAMPLE
-    Save-RandomPassword -Path "\" -Name ".secret_psql" -Secret $Secret
-    Save-RandomPassword -Path "\" -Name ".secret_ad_safe_mode" -Secret $Secret
+    Save-RandomPassword -Path "D:\" -Name ".secret_psql" -Secret $Secret
+    Save-RandomPassword -Path "D:\" -Name ".secret_ad_safe_mode" -Secret $Secret
 #>
 function Save-RandomPassword {
     param (

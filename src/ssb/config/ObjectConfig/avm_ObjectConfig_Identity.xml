@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE ObjectConfig PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<ObjectConfig name="Identity">
+  <Attributes>
+    <Map>
+      <entry key="defaultIdentityType">
+        <value>
+          <IdentityTypeDefinition name="IIQ_default">
+            <DisallowedAttributes>
+              <String>softwareVersion</String>
+              <String>administrator</String>
+            </DisallowedAttributes>
+          </IdentityTypeDefinition>
+        </value>
+      </entry>
+      <entry key="identityTypeDefinitions">
+        <value>
+          <List>
+            <IdentityTypeDefinition displayName="identity_type_employee" name="employee">
+              <DisallowedAttributes>
+                <String>softwareVersion</String>
+                <String>administrator</String>
+              </DisallowedAttributes>
+            </IdentityTypeDefinition>
+            <IdentityTypeDefinition displayName="identity_type_contractor" name="contractor">
+              <DisallowedAttributes>
+                <String>softwareVersion</String>
+                <String>administrator</String>
+              </DisallowedAttributes>
+            </IdentityTypeDefinition>
+            <IdentityTypeDefinition displayName="identity_type_partner" name="partner">
+              <DisallowedAttributes>
+                <String>softwareVersion</String>
+                <String>administrator</String>
+              </DisallowedAttributes>
+            </IdentityTypeDefinition>
+            <IdentityTypeDefinition displayName="identity_type_rpa" name="rpa">
+              <DisallowedAttributes>
+                <String>manager</String>
+              </DisallowedAttributes>
+              <ManagerCertifierAttribute>administrator</ManagerCertifierAttribute>
+            </IdentityTypeDefinition>
+            <IdentityTypeDefinition displayName="identity_type_service" name="service">
+              <DisallowedAttributes>
+                <String>softwareVersion</String>
+              </DisallowedAttributes>
+              <ManagerCertifierAttribute>administrator</ManagerCertifierAttribute>
+            </IdentityTypeDefinition>
+          </List>
+        </value>
+      </entry>
+    </Map>
+  </Attributes>
+  <ObjectAttribute displayName="att_user_name" name="name" silent="true" system="true" type="string"/>
+  <ObjectAttribute displayName="att_detected_roles" groupFactory="true" name="bundles" system="true" type="string"/>
+  <ObjectAttribute displayName="att_detected_role_summary" name="bundleSummary" silent="true" system="true" type="string"/>
+  <ObjectAttribute displayName="att_assigned_roles" groupFactory="true" name="assignedRoles" system="true" type="string"/>
+  <ObjectAttribute displayName="att_assigned_role_summary" name="assignedRoleSummary" silent="true" system="true" type="string"/>
+  <ObjectAttribute displayName="att_exceptions" name="exceptions" silent="true" system="true" type="string"/>
+  <ObjectAttribute displayName="att_last_refresh" name="lastRefresh" silent="true" system="true" type="string"/>
+  <ObjectAttribute displayName="att_last_login" name="lastLogin" silent="true" system="true" type="string"/>
+  <ObjectAttribute displayName="att_capabilities" name="capabilities" system="true" type="string"/>
+  <ObjectAttribute displayName="att_composite_score" name="scorecard.compositeScore" silent="true" system="true" type="string"/>
+  <ObjectAttribute displayName="att_manager" groupFactory="true" name="manager" standard="true" type="sailpoint.object.Identity"/>
+  <ObjectAttribute displayName="att_email" name="email" standard="true" type="string"/>
+  <ObjectAttribute displayName="att_first_name" name="firstname" standard="true" type="string"/>
+  <ObjectAttribute displayName="att_last_name" name="lastname" standard="true" type="string"/>
+  <ObjectAttribute displayName="att_inactive" name="inactive" standard="true" type="boolean"/>
+  <ObjectAttribute displayName="att_display_name" name="displayName" standard="true" type="string"/>
+  <ObjectAttribute displayName="att_manager_status" name="managerStatus" system="true" type="boolean"/>
+  <ObjectAttribute displayName="att_rights" name="rights" system="true" type="string"/>
+  <ObjectAttribute displayName="att_workgroups" name="workgroups" system="true" type="string"/>
+  <ObjectAttribute displayName="att_identity_type" name="type" standard="true" type="string"/>
+  <ObjectAttribute displayName="att_software_version" name="softwareVersion" standard="true" type="string"/>
+  <ObjectAttribute displayName="att_administrator" name="administrator" standard="true" type="sailpoint.object.Identity"/>
+  <ObjectAttribute displayName="avm_status" editMode="ReadOnly" groupFactory="true" name="status" namedColumn="true" type="string"/>
+  <ObjectAttribute displayName="avm_organization" editMode="ReadOnly" name="organization" namedColumn="true" type="string"/>
+  <ObjectAttribute displayName="avm_business_unit" editMode="ReadOnly" groupFactory="true" name="businessUnit" namedColumn="true" type="string"/>
+  <ObjectAttribute displayName="avm_department" editMode="ReadOnly" groupFactory="true" name="department" namedColumn="true" type="string"/>
+  <ObjectAttribute displayName="avm_job_title" editMode="ReadOnly" groupFactory="true" name="jobTitle" namedColumn="true" type="string"/>
+  <ObjectAttribute displayName="avm_position" editMode="ReadOnly" name="position" namedColumn="true" type="string"/>
+  <ObjectAttribute displayName="avm_location" editMode="ReadOnly" groupFactory="true" multi="true" name="location" type="string"/>
+  <ObjectAttribute displayName="avm_phone_number" editMode="ReadOnly" multi="true" name="phoneNumber" type="string"/>
+  <ObjectAttribute displayName="avm_service_date" editMode="ReadOnly" name="serviceDate" namedColumn="true" type="string"/>
+  <ObjectAttribute displayName="avm_record_date" editMode="ReadOnly" name="recordDate" namedColumn="true" type="string"/>
+</ObjectConfig>

@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE TaskDefinition PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<TaskDefinition name="Export Artifacts" resultAction="Delete" subType="task_item_type_generic" type="Generic">
+  <Attributes>
+    <Map>
+      <entry key="TaskSchedule.host"/>
+      <entry key="addCData" value="false"/>
+      <entry key="basePath" value="/apps/backups/artifacts"/>
+      <entry key="classNames" value="default"/>
+      <entry key="namingFormat" value="avm_$Class$_$Name$"/>
+      <entry key="pluginName" value="ObjectExporter"/>
+      <entry key="removeIDs" value="true"/>
+      <entry key="stripMetadata" value="true"/>
+      <entry key="taskCompletionEmailNotify" value="Disabled"/>
+      <entry key="taskCompletionEmailRecipients"/>
+      <entry key="taskCompletionEmailTemplate"/>
+    </Map>
+  </Attributes>
+  <Description>Export XML of IdentityIQ objects.</Description>
+  <Owner>
+    <Reference class="sailpoint.object.Identity" name="spadmin"/>
+  </Owner>
+  <Parent>
+    <Reference class="sailpoint.object.TaskDefinition" name="XML Object Exporter"/>
+  </Parent>
+</TaskDefinition>

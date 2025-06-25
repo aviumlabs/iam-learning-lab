@@ -28,7 +28,7 @@ The overarching design goal of this project is to provide a `solid` and
 * Automated install and configuration of PostgreSQL 15  
 * Automated install and configuration of Apache Tomcat 9  
 * Automated build, deployment, and initialization of IdentityIQ 8.4  
-  * *Requires manually downloading software from SailPoint  
+  * Requires manually downloading software from SailPoint  
 
 
 ## Goals
@@ -159,8 +159,8 @@ This is a `Docker` based project and (in my opinion), runs the most advanced
 technology stack out there today:  
 * Alpine Linux 3.21.3  
 * PostgreSQL 17.4  
-* Erlang 27.3.3  
-* Elixir 1.18.3  
+* Erlang 27.3.4  
+* Elixir 1.18.4  
 * Phoenix Framework 1.7.21  
 
 Version numbers are subject to change :wink:.
