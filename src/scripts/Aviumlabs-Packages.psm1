@@ -167,6 +167,7 @@ function Install-Packages {
     Install-ApacheAnt -Path $Path
     Install-ApacheJMeter -Path $Path
     Install-ApacheTomcat -Path $Path
+    Install-Python -Path $Path
     Install-VSCode -Path $Path
     Set-ApacheFSPermissions -Path $Path
     Initialize-ApacheTomcat -Path $Path
@@ -1689,11 +1690,16 @@ function Install-Python {
     $pkg = Get-PackageName -Name "python" -Pkgs $Packages
     if ($Packages[$pkg]['verified']) {
         $installer = $Path + $Directories["downloads"] + $pkg
+        $install_path = $Path + $Directories["bin"]
+        # python-3.13.3-amd64.exe
+        $res = $pkg -Match '[0-9]{1}.[0-9]{2}.[0-9]{1}'
+        $python_version = $Matches[0]
+        $install_path += "python-$python_version"
 
         # Launch installer
         Invoke-Command -ScriptBlock {   
             Write-Progress -Activity "Installing Python...";
-            .$installer /quiet InstallAllUsers=1 PrependPath=1 Include_test=0
+            .$installer /quiet TargetDir=$install_path InstallAllUsers=1 PrependPath=1 Include_test=0
         } | Out-Null
         
         if ($?) {

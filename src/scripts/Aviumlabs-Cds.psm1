@@ -63,10 +63,10 @@ $Packages = [ordered]@{
         vhash = "2dfa43460950c1aecda05f40a9262a66bc06db960445ea78921c78f84377b148";
         verified = $false;
     }
-    "python-3.13.3-amd64.exe" = @{
-        endpoint = "https://www.python.org/ftp/python/3.13.3/python-3.13.3-amd64.exe";
+    "python-3.13.5-amd64.exe" = @{
+        endpoint = "https://www.python.org/ftp/python/3.13.5/python-3.13.5-amd64.exe";
         halg = "SHA256";
-        vhash = "698f2df46e1a3dd92f393458eea77bd94ef5ff21f0d5bf5cf676f3d28a9b4b6c";
+        vhash = "c1cb40978b28f696b111c36034a1bdeda17d25e35c74a08ef5e5ff405a63fc20";
         verified = $false;
     }
     "sqlite-dll-win-x64-3500100.zip" = @{

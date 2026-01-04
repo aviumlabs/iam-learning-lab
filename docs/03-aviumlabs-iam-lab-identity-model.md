@@ -45,7 +45,6 @@ identity model needs to be extended during configuration.
 | Preferred Given Name  | Optional preferred given name of the identity.                         |
 | Middle Name           | Optional middle name of the identity.                                  |
 | Family Name           | The family name or last name of the identity.                          |
-| Preferred Family Name | Optional preferred family name of the identity.                        |
 | Display Name          | The full, friendly name of the identity.                               |
 | Title                 | Optional prefix of the identity - i.e., Mr, Ms, Mrs, Miss, Mx.         |
 | Suffix                | Optional generational qualifier - i.e., Jr, Sr, I, II.                 |
