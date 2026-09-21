@@ -13,6 +13,8 @@ src/ssb/build.number
 src/ssb/tc1.iiq.properties
 src/ssb/tc1.log4j2.properties
 src/ssb/tc1.target.properties
+src/tcdocker-iam/.secret_db
+src/tcdocker-iam/.pgpass
 
 # Vim
 *.swo
