@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Tomcat Instance ID
-$TcInstanceId = "-a"
+$TcInstanceId = "1"
 
 # Base Packages
 $BasePackages = [ordered]@{
@@ -33,10 +33,10 @@ $Packages = [ordered]@{
         vhash = "c5a75fc28cbc52f09bd43b5506978601";
         verified = $false;
     }
-    "apache-ant-1.10.15-bin.zip" = @{
-        endpoint = "https://dlcdn.apache.org/ant/binaries/apache-ant-1.10.15-bin.zip";
+    "apache-ant-1.10.17-bin.zip" = @{
+        endpoint = "https://archive.apache.org/dist/ant/binaries/apache-ant-1.10.17-bin.zip";
         halg = "SHA512";
-        vhash = "1de7facbc9874fa4e5a2f045d5c659f64e0b89318c1dbc8acc6aae4595c4ffaf90a7b1ffb57f958dd08d6e086d3fff07aa90e50c77342a0aa5c9b4c36bff03a9";
+        vhash = "5205a3c87902dd356a6bfcfc5d07659361d1c74627716662d7b31ab47817388dd1d985cfc27ca81a607827cb58d9e36d2d2fbf87a961a5dd4eeabfbde380aa71";
         verified = $false;
     }
     "apache-jmeter-5.6.3.zip" = @{
@@ -45,22 +45,28 @@ $Packages = [ordered]@{
         vhash = "387fadca903ee0aa30e3f2115fdfedb3898b102e6b9fe7cc3942703094bd2e65b235df2b0c6d0d3248e74c9a7950a36e42625fd74425368342c12e40b0163076";
         verified = $false;
     }
-    "apache-tomcat-9.0.106-windows-x64.zip" = @{
-        endpoint = "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.106/bin/apache-tomcat-9.0.106-windows-x64.zip";
+    "apache-tomcat-9.0.118-windows-x64.zip" = @{
+        endpoint = "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.118/bin/apache-tomcat-9.0.118-windows-x64.zip";
         halg = "SHA512";
-        vhash = "57454fd2244526cb728d29c63d1a75679fd809cabdb38cfb62eedf19806c51888f1e6c7feaa4710a9d788493d0f26752fbd5836acb39161a3bfe07441be82ad2";
+        vhash = "1943f9aadd224b087ad23f48b1f7be907bc25be4a6cad17a6e744cfeb960207fb0cafbe9e24fd45cab36033d31ebf1f8110d293adf04f2d192b2ab5d4e818305";
         verified = $false;
     }
-    "openjdk-21.0.2_windows-x64_bin.zip" = @{
-        endpoint = "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip";
+    "jdk-21.0.10_windows-x64_bin.zip" = @{
+        endpoint = "https://download.oracle.com/java/21/archive/jdk-21.0.10_windows-x64_bin.zip";
         halg = "SHA256";
-        vhash = "b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664";
+        vhash = "8631c2c1b543f1639011ba599437aead12406ac715a0364aa0a6743cdb9f671a";
         verified = $false;
     }
     "postgresql-15.12-1-windows-x64.exe" = @{
         endpoint = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259414";
         halg = "SHA256";
         vhash = "2dfa43460950c1aecda05f40a9262a66bc06db960445ea78921c78f84377b148";
+        verified = $false;
+    }
+    "postgresql-15.18-1-windows-x64-binaries.zip" = @{
+        endpoint = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1260205";
+        halg = "SHA256";
+        vhash = "ef57c1f67550a548a83437bdbc35ccda632d63d267299cb9ce45c5fca2c900f4";
         verified = $false;
     }
     "python-3.13.5-amd64.exe" = @{

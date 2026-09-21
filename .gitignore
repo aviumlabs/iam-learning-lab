@@ -7,6 +7,12 @@ src/ssb/base/ga/*
 src/ssb/base/efix/*
 src/ssb/base/patch/*
 src/ssb/build/
+src/ssb/build.number
+
+# Project specific files
+src/ssb/tc1.iiq.properties
+src/ssb/tc1.log4j2.properties
+src/ssb/tc1.target.properties
 
 # Vim
 *.swo

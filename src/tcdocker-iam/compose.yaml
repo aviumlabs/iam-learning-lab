@@ -1,0 +1,54 @@
+services:
+  app:
+    env_file: 
+      - path: ./.env 
+        required: true
+    image: "aviumlabs/tomcat-ant:9.0.121-alpine"
+    hostname: tc1
+    domainname: aviumlabs.test
+    working_dir: /opt/tomcat/ssb
+    pull_policy: always
+    volumes:
+      - tc_iam_backup:/opt/backup
+      - tc_iam_inst_logs:/opt/tomcat/instances/${INSTANCE_NAME}/logs
+      - tc_iam_inst_conf:/opt/tomcat/instances/${INSTANCE_NAME}/conf
+      - tc_iam_secrets:/opt/secrets
+      - tc_iam_inst_webapps:/opt/tomcat/instances/${INSTANCE_NAME}/webapps
+      - ../ssb:/opt/tomcat/ssb
+      - ./.pgpass:/opt/tomcat/.pgpass:ro
+      - ../scripts/iiqdeptools.py:/usr/local/bin/iiqdeptools.py
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    depends_on:
+      db:
+        condition: service_healthy
+    secrets:
+      - postgres_password
+  db:
+    env_file: 
+      - path: ./.env 
+        required: true
+    image: "postgres:15-alpine3.24"
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    secrets:
+      - postgres_password
+
+volumes:
+  db_data:
+  tc_iam_backup:
+  tc_iam_inst_logs:
+  tc_iam_inst_conf:
+  tc_iam_secrets:
+  tc_iam_inst_webapps:
+
+secrets:
+  postgres_password:
+    file: ./.secret_db

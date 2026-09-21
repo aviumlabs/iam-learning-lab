@@ -1,6 +1,14 @@
-# Avium Labs IAM Learning Lab
+Avium Labs IAM Learning Lab Intro (c) by Michael Konrad
 
-I am excited to share the release of the `Avium Labs IAM Learning Lab` - 
+Avium Labs IAM Learning Lab is licensed under a
+Creative Commons Attribution 4.0 International License.
+
+You should have received a copy of the license along with this
+work. If not, see <http://creativecommons.org/licenses/by/4.0/>
+
+# Avium Labs IAM Learning Lab Intro
+
+Excited to share the release of the `Avium Labs IAM Learning Lab` - 
 `https://github.com/aviumlabs/iam-learning-lab`. 
 
 This initial release of `iam-learning-lab` is foundational only, later releases 
@@ -157,11 +165,11 @@ advanced web development project - `https://github.com/aviumlabs/phoenix-compose
 
 This is a `Docker` based project and (in my opinion), runs the most advanced 
 technology stack out there today:  
-* Alpine Linux 3.21.3  
-* PostgreSQL 17.4  
-* Erlang 27.3.4  
-* Elixir 1.18.4  
-* Phoenix Framework 1.7.21  
+* Alpine Linux 3.23.2  
+* PostgreSQL 18.1 
+* Erlang 28.3 
+* Elixir 1.19.4  
+* Phoenix Framework 1.8.3  
 
 Version numbers are subject to change :wink:.
 

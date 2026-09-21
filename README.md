@@ -6,15 +6,20 @@ learning about Identity and Access Management and SailPoint IdentityIQ.
 
 ## Prerequisites
 
+The project currently supports three deployment platforms:
+- VirtualBox (Windows)
+- Windows Desktop
+- Docker (Linux)
+
+
+## Getting Started VirtualBox
+
 You'll need a `GitHub` account and the following software installed on your
 computer prior to starting this lab.
 
 * VirtualBox
 * GitHub CLI
 * Git
-
-
-## Getting Started
 
 Create a directory, such as `Software` on your computer. The 
 `Software` directory will be mounted inside the virtual machine. 
@@ -33,15 +38,15 @@ gh repo create iam-learning-lab -c -d "Avium Labs IAM Learning Lab" --private -p
 The included .gitignore file excludes the properitary SailPoint IdentityIQ files. 
 Comment out the IdentityIQ IP section for a private repository. 
 
-This lab's software components:
+This lab's VirtualBox software components:
 
 * Windows Server 2022
 * PostgreSQl 15
 * Tomcat 9
 * Java 21
 
-Setting up `Avium Labs IAM Learning Lab` is documented in the guides 
-in the docs directory. 
+Setting up `Avium Labs IAM Learning Lab` is documented in the guides in the 
+docs directory. 
 
 1. [aviumlabs-virtualbox-install-guide](./docs/aviumlabs-virtualbox-install-guide.md)
 2. [aviumlabs-iam-lab-install-guide](./docs/aviumlabs-iam-lab-install-guide.md)
@@ -82,3 +87,7 @@ Copy the `identityiq-8.4.zip` file to your **private** repository to the
 
 Copy the `identityiq-8.4p2.jar` file to the **src\ssb\base\patch** 
 directory.
+
+
+## Getting Started Docker
+

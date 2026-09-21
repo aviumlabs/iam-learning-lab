@@ -701,7 +701,7 @@ function Initialize-IiqExtract {
 .DESCRIPTION
     Internal function to build an IdentityIQ web archive (war).
 .EXAMPLE
-    Initialize-IiqWar
+    `
 #>
 function Initialize-IiqWar {
     $build = "$SsbHome\build.bat"
@@ -743,7 +743,7 @@ function Initialize-IiqWar {
     The identifier of a specific Tomcat instance, defaults to $TcInstanceId.
     $TcInstanceId is defined in the Aviumlabs-Cds.psm1 script.
 .EXAMPLE
-    New-IiqDeployment -Path "C:\" -InstanceId "-b"
+    New-IiqDeployment -Path "C:\" -InstanceId "2"
 #>
 function New-IiqDeployment {
     param (

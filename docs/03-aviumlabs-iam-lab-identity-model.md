@@ -170,7 +170,7 @@ and reporting.
 **Identity Mapping - IdentityIQ Model**  
 | Attribute Name        | IIQ Field Name        | IIQ Searchable | IIQ Indexed | IIQ Group Factory |
 | :---                  | :---                  | :---           | :---        | :---              |
-| Employee Id           | name                  | Y (OOTB)       | Y (OOTB)    | N                 |
+| Unique Id             | name                  | Y (OOTB)       | Y (OOTB)    | N                 |
 | Type                  | type                  | Y (OOTB)       | Y (OOTB)    | N                 |
 | Status                | status                | Y              | Y           | Y                 |
 | Given Name            | firstname             | Y (OOTB)       | Y (OOTB)    | N                 |
