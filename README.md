@@ -3,8 +3,25 @@
 `Avium Labs IAM Learning Lab` is a self-contained environment for 
 learning about Identity and Access Management and SailPoint IdentityIQ. 
 
+## Prerequisite IdentityIQ Downloads
 
-## Prerequisites
+The following software needs to be downloaded and copied to your **private** repository.
+
+To complete the lab install, IdentityIQ needs to be downloaded from SailPoint 
+https://community.sailpoint.com - requires a SailPoint Compass account.
+
+IdentityIQ 8.4
+* https://community.sailpoint.com/t5/IdentityIQ-Articles/What-s-New-in-IdentityIQ-8-4/ta-p/240336#
+
+IdentityIQ 8.4 Checksum
+* https://community.sailpoint.com/t5/IdentityIQ-Articles/What-s-New-in-IdentityIQ-8-4/ta-p/240336#
+
+IdentityIQ 8.4p2
+* https://community.sailpoint.com/t5/IdentityIQ-Server-Software/IdentityIQ-8-4p2/ta-p/262143#
+
+IdentityIQ 8.4p2 Checksum
+* https://community.sailpoint.com/t5/IdentityIQ-Server-Software/IdentityIQ-8-4p2/ta-p/262143#
+
 
 The project currently supports three deployment platforms:
 - VirtualBox (Windows)
@@ -50,27 +67,6 @@ docs directory.
 
 1. [aviumlabs-virtualbox-install-guide](./docs/aviumlabs-virtualbox-install-guide.md)
 2. [aviumlabs-iam-lab-install-guide](./docs/aviumlabs-iam-lab-install-guide.md)
-
-
-## Additional Prerequisite Software
-
-The following prequisite software needs to be downloaded and copied to your 
-**private** repository prior to running `Install-IdentityIq`.
-
-To complete the lab install, IdentityIQ needs to be downloaded from SailPoint 
-https://community.sailpoint.com - requires a SailPoint Compass account.
-
-IdentityIQ 8.4
-* https://community.sailpoint.com/t5/IdentityIQ-Articles/What-s-New-in-IdentityIQ-8-4/ta-p/240336#
-
-IdentityIQ 8.4 Checksum
-* https://community.sailpoint.com/t5/IdentityIQ-Articles/What-s-New-in-IdentityIQ-8-4/ta-p/240336#
-
-IdentityIQ 8.4p2
-* https://community.sailpoint.com/t5/IdentityIQ-Server-Software/IdentityIQ-8-4p2/ta-p/262143#
-
-IdentityIQ 8.4p2 Checksum
-* https://community.sailpoint.com/t5/IdentityIQ-Server-Software/IdentityIQ-8-4p2/ta-p/262143#
 
 
 __Verify__ the integrity of the downloaded files.

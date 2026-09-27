@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tomcat-app.fullname" . }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+    spec:
+      containers:
+        - name: app
+          image: {{ .Values.app.image }}
+          workingDir: {{ .Values.app.workingDir }}
+          ports:
+            - containerPort: {{ .Values.app.ports.http }}
+            - containerPort: {{ .Values.app.ports.https }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "tomcat-app.fullname" . }}-config
+          volumeMounts:
+            - name: backup
+              mountPath: /opt/backup
+            - name: logs
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/logs
+            - name: conf
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/conf
+            - name: secrets
+              mountPath: /opt/secrets
+            - name: webapps
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/webapps
+            - name: pgpass
+              mountPath: /opt/tomcat/.pgpass
+              subPath: .pgpass
+              readOnly: true
+            - name: ssb-data
+              mountPath: /opt/tomcat/ssb
+      volumes:
+        - name: backup
+          persistentVolumeClaim:
+            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_backup
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_inst_logs
+        - name: conf
+          persistentVolumeClaim:
+            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_inst_conf
+        - name: secrets
+          persistentVolumeClaim:
+            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_secrets
+        - name: webapps
+          persistentVolumeClaim:
+            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_inst_webapps
+        - name: pgpass
+          secret:
+            secretName: {{ include "tomcat-app.fullname" . }}-db-secret
+        - name: ssb-data
+          hostPath:
+            path: {{ .Values.app.workingDir }} # This mimics your ../ssb

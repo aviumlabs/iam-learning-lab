@@ -1,0 +1,40 @@
+# Global Settings
+appName: tck8s-iam
+instanceName: default
+
+# Database Configuration
+db:
+  image: "postgres:15-alpine3.24"
+  user: postgres
+  password: "your_password_here" # Ideally handled via Secrets
+  database: app_db
+  persistence:
+    size: 20Gi
+
+# App Configuration
+app:
+  image: "aviumlabs/tomcat-ant:9.0.121-alpine"
+  workingDir: /opt/tomcat/ssb
+  replicaCount: 1
+  ports:
+    http: 8080
+    https: 8443
+  
+  # These represent the contents of your .env file
+  env:
+    DATABASE_URL: "postgres://..."
+    OTHER_VAR: "some_value"
+
+# Volume Settings
+# We map your named volumes to PersistentVolumeClaims
+volumes:
+  tc_iam_backup:
+    size: 5Gi
+  tc_iam_inst_logs:
+    size: 2Gi
+  tc_iam_inst_conf:
+    size: 1Gi
+  tc_iam_secrets:
+    size: 1Gi
+  tc_iam_inst_webapps:
+    size: 5Gi
