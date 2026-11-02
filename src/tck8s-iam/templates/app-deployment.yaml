@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "tomcat-app.fullname" . }}
+  name: {{ include "tck8s-iam.fullname" . }}
 spec:
   replicas: {{ .Values.app.replicaCount }}
   selector:
@@ -21,7 +21,7 @@ spec:
             - containerPort: {{ .Values.app.ports.https }}
           envFrom:
             - configMapRef:
-                name: {{ include "tomcat-app.fullname" . }}-config
+                name: {{ include "tck8s-iam.fullname" . }}-config
           volumeMounts:
             - name: backup
               mountPath: /opt/backup
@@ -42,22 +42,22 @@ spec:
       volumes:
         - name: backup
           persistentVolumeClaim:
-            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_backup
+            claimName: {{ include "tck8s-iam.fullname" . }}-tc_iam_backup
         - name: logs
           persistentVolumeClaim:
-            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_inst_logs
+            claimName: {{ include "tck8s-iam.fullname" . }}-tc_iam_inst_logs
         - name: conf
           persistentVolumeClaim:
-            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_inst_conf
+            claimName: {{ include "tck8s-iam.fullname" . }}-tc_iam_inst_conf
         - name: secrets
           persistentVolumeClaim:
-            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_secrets
+            claimName: {{ include "tck8s-iam.fullname" . }}-tc_iam_secrets
         - name: webapps
           persistentVolumeClaim:
-            claimName: {{ include "tomcat-app.fullname" . }}-tc_iam_inst_webapps
+            claimName: {{ include "tck8s-iam.fullname" . }}-tc_iam_inst_webapps
         - name: pgpass
           secret:
-            secretName: {{ include "tomcat-app.fullname" . }}-db-secret
+            secretName: {{ include "tck8s-iam.fullname" . }}-db-secret
         - name: ssb-data
           hostPath:
-            path: {{ .Values.app.workingDir }} # This mimics your ../ssb
+            path: {{ .Values.app.workingDir }} # This mimics ../ssb

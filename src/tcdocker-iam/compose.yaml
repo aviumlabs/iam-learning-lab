@@ -3,7 +3,7 @@ services:
     env_file: 
       - path: ./.env 
         required: true
-    image: "aviumlabs/tomcat-ant:9.0.121-alpine"
+    image: "aviumlabs/tomcat-ant:9.0.122-alpine"
     hostname: tc1
     domainname: aviumlabs.test
     working_dir: /opt/tomcat/ssb
