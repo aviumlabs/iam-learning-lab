@@ -46,16 +46,11 @@ This secret contains the root password required for schema migrations and admini
 python3 scripts/setup_secrets.py --name tck8s-iam-db-secret --keys ".secret_db=$(cat ./.secret_db)" -n tck8s-iam
 ```
 
-```bash
-# Replace REPLACE_WITH_PASSWORD with your desired root password
-python3 scripts/setup_secrets.py --name tck8s-iam-db-secret --keys ".secret_db=REPLACE_WITH_PASSWORD" --namespace tck8s-iam
-```
-
 **B. IdentityIQ Schema Secrets**
 These secrets contain the `.pgpass` credentials for the IdentityIQ-specific schemas. It must be named `tck8s-iam-schema-secrets`.
 
 ```shell
-python3 scripts/setup_secrets.py --name tck8s-iam-schema-secrets --keys "$(cat ./.pgpass)" -n tck8s-iam 
+python3 scripts/setup_secrets.py --name tck8s-iam-schema-secrets --keys ".pgpass=$(cat ./.pgpass)" -n tck8s-iam 
 ```
 
 ```bash
