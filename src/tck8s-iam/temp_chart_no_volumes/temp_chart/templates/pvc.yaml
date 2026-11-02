@@ -1,0 +1,17 @@
+{{- range $name, $size := .Values.volumes }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "tck8s-iam.fullname" $ }}-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $size.size }}
+  {{- if $size.storageClassName }}
+  storageClassName: {{ $size.storageClassName }}
+  {{- end }}
+---
+{{- end }}

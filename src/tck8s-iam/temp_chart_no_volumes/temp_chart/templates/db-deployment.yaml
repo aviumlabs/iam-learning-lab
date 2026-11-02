@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tck8s-iam.fullname" . }}-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}-db
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}-db
+    spec:
+      initContainers:
+        - name: volume-permissions
+          image: busybox
+          command: ["chown", "-R", "1000:1000", "/var/lib/postgresql/data"]
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+      containers:
+        - name: db
+          image: {{ .Values.db.image }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tck8s-iam.fullname" . }}-{{ .Values.db.schemaSecretName }}
+                  key: .secret_db
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: {{ include "tck8s-iam.fullname" . }}-db-data

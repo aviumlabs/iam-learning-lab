@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tck8s-iam.fullname" . }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+    spec:
+      initContainers:
+        - name: volume-permissions
+          image: busybox
+          command: ["chown", "-R", "1000:1000", "/opt/secrets", "/opt/backup", "/opt/tomcat/instances", "/opt/tomcat/ssb"]
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          volumeMounts:
+            - name: backup
+              mountPath: /opt/backup
+            - name: logs
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/logs
+            - name: conf
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/conf
+            - name: secrets-storage
+              mountPath: /opt/secrets
+            - name: webapps
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/webapps
+            - name: pgpass
+              mountPath: /opt/tomcat/.pgpass
+              subPath: .pgpass
+              readOnly: true
+            - name: ssb-data
+              mountPath: /opt/tomcat/ssb
+        - name: schema-init
+          image: {{ .Values.app.image }} 
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Run build/extract and then configure/install the schema
+              /usr/local/bin/iiqdeptools.py -b n && /usr/local/bin/iiqdeptools.py -c
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tck8s-iam.fullname" . }}-{{ .Values.db.schemaSecretName }}
+                  key: .secret_db
+            - name: SSB_HOME
+              value: /opt/tomcat/ssb
+            - name: INSTANCE_NAME
+              value: {{ .Values.instanceName }}
+            - name: BACKUP_HOME
+              value: /opt/backup
+            - name: PG_HOST
+              value: localhost
+            - name: PG_PORT
+              value: "5432"
+            - name: PG_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD_FILE
+              value: /opt/secrets/db-secret
+          volumeMounts:
+            - name: ssb-data
+              mountPath: /opt/tomcat/ssb
+            - name: script-volume
+              mountPath: /usr/local/bin/iiqdeptools.py
+              subPath: iiqdeptools.py
+            - name: secrets-storage
+              mountPath: /opt/secrets
+            - name: pgpass
+              mountPath: /opt/tomcat/.pgpass
+              subPath: .pgpass
+              readOnly: true
+      containers:
+        - name: app
+          image: {{ .Values.app.image }}
+          workingDir: {{ .Values.app.workingDir }}
+          ports:
+            - containerPort: {{ .Values.app.ports.http }}
+            - containerPort: {{ .Values.app.ports.https }}
+          env:
+            - name: SSB_HOME
+              value: {{ .Values.app.workingDir }}
+            - name: INSTANCE_NAME
+              value: {{ .Values.instanceName }}
+
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "tck8s-iam.fullname" . }}-config
+          volumeMounts:
+            - name: backup
+              mountPath: /opt/backup
+            - name: logs
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/logs
+            - name: conf
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/conf
+            - name: secrets-storage
+              mountPath: /opt/secrets
+            - name: webapps
+              mountPath: /opt/tomcat/instances/{{ .Values.instanceName }}/webapps
+            - name: pgpass
+              mountPath: /opt/tomcat/.pgpass
+              subPath: .pgpass
+              readOnly: true
+            - name: ssb-data
+              mountPath: /opt/tomcat/ssb
+      volumes:
+        - name: backup
+          persistentVolumeClaim:
+            claimName: {{ include "tck8s-iam.fullname" . }}-{{ .Values.pvcSuffixes.backup }}
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ include "tck8s-iam.fullname" . }}-{{ .Values.pvcSuffixes.logs }}
+        - name: conf
+          persistentVolumeClaim:
+            claimName: {{ include "tck8s-iam.fullname" . }}-{{ .Values.pvcSuffixes.conf }}
+        - name: secrets-storage
+          hostPath:
+            path: {{ .Values.db.secrets_path }}
+        - name: webapps
+          persistentVolumeClaim:
+            claimName: {{ include "tck8s-iam.fullname" . }}-{{ .Values.pvcSuffixes.webapps }}
+        - name: pgpass
+          secret:
+            secretName: {{ include "tck8s-iam.fullname" . }}-db-secret
+            items:
+              - key: .pgpass
+                path: .pgpass
+        - name: ssb-data
+          hostPath:
+            path: {{ .Values.app.ssb_host_path }}
+        - name: script-volume
+          configMap:
+            name: {{ include "tck8s-iam.fullname" . }}-scripts
+            defaultMode: 0755
+        - name: schema-secrets-vol
+          secret:
+            secretName: {{ include "tck8s-iam.fullname" . }}-{{ .Values.db.schemaSecretName }}
+            items:
+              - key: .secret_db
+                path: db-secret

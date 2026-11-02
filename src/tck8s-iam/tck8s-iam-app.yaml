@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    meta.helm.sh/release-name: tck8s-iam
+    meta.helm.sh/release-namespace: tck8s-iam
+  creationTimestamp: "2026-10-24T05:04:20Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: tck8s-iam
+  namespace: tck8s-iam
+  resourceVersion: "6547740"
+  uid: 4f948128-3ba7-43f6-9e3d-22e16e26a910
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: tck8s-iam
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: tck8s-iam
+    spec:
+      containers:
+      - env:
+        - name: SSB_HOME
+          value: /opt/tomcat/ssb
+        - name: INSTANCE_NAME
+          value: tc1
+        - name: PG_HOST
+          value: tck8s-iam-db
+        - name: PG_PORT
+          value: "5432"
+        envFrom:
+        - configMapRef:
+            name: tck8s-iam-config
+        image: aviumlabs/tomcat-ant:9.0.122-alpine
+        imagePullPolicy: IfNotPresent
+        name: app
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /opt/backup
+          name: backup
+        - mountPath: /opt/tomcat/instances/tc1/logs
+          name: logs
+        - mountPath: /opt/tomcat/instances/tc1/conf
+          name: conf
+        - mountPath: /opt/secrets
+          name: secrets-storage
+        - mountPath: /opt/tomcat/instances/tc1/webapps
+          name: webapps
+        - mountPath: /opt/tomcat/ssb
+          name: ssb-data
+        - mountPath: /usr/local/bin/iiqdeptools.py
+          name: script-volume
+          subPath: iiqdeptools.py
+        workingDir: /opt/tomcat/ssb
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - args:
+        - cp -a /opt/tomcat/instances/tc1/conf/. /mnt/conf/
+        command:
+        - /bin/sh
+        - -c
+        image: aviumlabs/tomcat-ant:9.0.122-alpine
+        imagePullPolicy: IfNotPresent
+        name: seed-conf
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /mnt/conf
+          name: conf
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 965
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: backup
+        persistentVolumeClaim:
+          claimName: tck8s-iam-tc-iam-backup
+      - name: logs
+        persistentVolumeClaim:
+          claimName: tck8s-iam-tc-iam-logs
+      - name: conf
+        persistentVolumeClaim:
+          claimName: tck8s-iam-tc-iam-conf
+      - name: secrets-storage
+        persistentVolumeClaim:
+          claimName: tck8s-iam-tc-iam-secrets
+      - name: webapps
+        persistentVolumeClaim:
+          claimName: tck8s-iam-tc-iam-webapps
+      - hostPath:
+          path: /home/mkonrad/Development/source/iam-learning-lab/src/ssb
+          type: ""
+        name: ssb-data
+      - configMap:
+          defaultMode: 600
+          name: tck8s-iam-scripts
+        name: script-volume
+      - name: dbpass 
+        secret:
+          defaultMode: 600
+          items:
+          - key: .secret_db
+            path: db-secret
+          secretName: tck8s-iam-db-secret
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-10-24T05:04:34Z"
+    lastUpdateTime: "2026-10-24T05:04:34Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-10-24T05:04:20Z"
+    lastUpdateTime: "2026-10-24T05:04:34Z"
+    message: ReplicaSet "tck8s-iam-855f7c7b96" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  updatedReplicas: 1

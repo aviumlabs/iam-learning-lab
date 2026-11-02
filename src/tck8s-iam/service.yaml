@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tck8s-iam-service
+  namespace: tck8s-iam
+spec:
+  type: ClusterIP
+  selector:
+    app: tck8s-iam
+  ports:
+    - name: https
+      protocol: TCP
+      port: 8443
+      targetPort: 8443

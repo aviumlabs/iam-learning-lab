@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "tck8s-iam.fullname" . }}-db
+  labels:
+    component: db
 spec:
   replicas: 1
   selector:
@@ -11,29 +13,39 @@ spec:
     metadata:
       labels:
         app: {{ .Values.appName }}-db
+        component: db
     spec:
+      initContainers:
+        - name: volume-permissions
+          image: busybox
+          command: ["chown", "-R", "1000:1000", "/var/lib/postgresql/data"]
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
       containers:
         - name: db
           image: {{ .Values.db.image }}
           env:
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "tck8s-iam.fullname" . }}-db-secret
-                  key: postgres_password
-            - name: POSTGRES_USER
-              value: {{ .Values.db.user }}
+            - name: POSTGRES_PASSWORD_FILE
+              value: "/etc/secrets/db-secret"
           ports:
             - containerPort: 5432
           volumeMounts:
             - name: db-data
               mountPath: /var/lib/postgresql/data
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "postgres"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            - name: dbpass 
+              mountPath: /etc/secrets
+              readOnly: true
       volumes:
         - name: db-data
           persistentVolumeClaim:
             claimName: {{ include "tck8s-iam.fullname" . }}-db-data
+        - name: dbpass
+          secret:
+            secretName: {{ include "tck8s-iam.fullname" . }}-{{ .Values.db.schemaSecretName }}
+            items:
+              - key: .secret_db
+                path: db-secret

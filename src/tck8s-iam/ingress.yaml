@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tck8s-iam-ingress
+  namespace: tck8s-iam
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # Since Traefik is installed, we use its class
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: iiq.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: tck8s-iam-service
+            port:
+              number: 8443

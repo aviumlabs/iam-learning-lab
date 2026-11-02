@@ -1,0 +1,63 @@
+# Global Settings
+appName: tck8s-iam
+instanceName: tc1
+project_root: /iam-learning-lab/src/tck8s-iam
+
+# Database Configuration
+db:
+  image: "postgres:15-alpine3.24"
+  user: postgres
+  database: app_db
+  persistence:
+    size: 20Gi
+  dbSecretName: db-secret
+  schemaSecretName: schema-secrets
+  secrets_path: /iam-learning-lab/src/tck8s-iam/volumes/secrets
+
+# App Configuration
+app:
+  image: "aviumlabs/tomcat-ant:9.0.122-alpine"
+  workingDir: /opt/tomcat/ssb
+  replicaCount: 1
+  ports:
+    http: 8080
+    https: 8443
+  
+  # These are non-sensitive configurations
+  #env:
+  #  OTHER_VAR: "some_value"
+
+  # Hot-loop Development Settings
+  ssb_host_path: /iam-learning-lab/src/ssb
+  tomcat_mgr_user: manager
+
+
+# Volume Settings
+# We map your named volumes to PersistentVolumeClaims
+volumes:
+  db-data:
+    size: 20Gi
+    storageClassName: standard
+  tc-iam-backup:
+    size: 5Gi
+    storageClassName: standard
+  tc-iam-logs:
+    size: 2Gi
+    storageClassName: standard
+  tc-iam-conf:
+    size: 1Gi
+    storageClassName: standard
+  tc-iam-secrets:
+    size: 1Gi
+    storageClassName: standard
+  tc-iam-webapps:
+    size: 5Gi
+    storageClassName: standard
+
+# PVC Name Suffixes
+pvcSuffixes:
+  backup: tc-iam-backup
+  logs: tc-iam-logs
+  conf: tc-iam-conf
+  secrets: tc-iam-secrets
+  webapps: tc-iam-webapps
