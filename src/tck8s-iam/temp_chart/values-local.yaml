@@ -1,0 +1,7 @@
+app:
+  ssb_host_path: /home/mkonrad/Development/source/iam-learning-lab/src/ssb
+
+db:
+  secrets_path: /home/mkonrad/Development/source/iam-learning-lab/src/tck8s-iam/volumes
+# Update this to your local absolute project path
+project_root: /home/mkonrad/Development/source/iam-learning-lab/src/tck8s-iam

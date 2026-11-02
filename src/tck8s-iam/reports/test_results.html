@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Results - setup_secrets.py</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; font-weight: bold; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Test Results: scripts/setup_secrets.py</h1>
+    <p><strong>Summary:</strong> 4 Tests Ran, 4 Passed, 0 Failed</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Test Case</th>
+                <th>Result</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>test_alphanumeric</td>
+                <td class="pass">PASS</td>
+                <td>Verified generation of 10-char alphanumeric password and correct `bw` command construction.</td>
+            </tr>
+            <tr>
+                <td>test_complex</td>
+                <td class="pass">PASS</td>
+                <td>Verified generation of 20-char complex password and correct `bw` command construction.</td>
+            </tr>
+            <tr>
+                <td>test_invalid_type</td>
+                <td class="pass">PASS</td>
+                <td>Verified that `argparse` correctly rejects invalid password types with `SystemExit`.</td>
+            </tr>
+            <tr>
+                <td>test_cli_missing</td>
+                <td class="pass">PASS</td>
+                <td>Verified that the script handles the absence of the `bitwarden` CLI gracefully.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Execution Logs</h2>
+    <pre>
+test_alphanumeric: Success!
+test_complex: Success!
+test_invalid_type: Success!
+test_cli_missing: Success!
+    </pre>
+</body>
+</html>

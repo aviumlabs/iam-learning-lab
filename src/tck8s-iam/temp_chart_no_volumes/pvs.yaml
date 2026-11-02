@@ -1,0 +1,84 @@
+# Persistent Volumes for tck8s-iam
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tck8s-iam-db-data
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: ${PROJECT_ROOT}/volumes/db-data
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tck8s-iam-tc-iam-backup
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: ${PROJECT_ROOT}/volumes/backup
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tck8s-iam-tc-iam-conf
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: ${PROJECT_ROOT}/volumes/conf
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tck8s-iam-tc-iam-logs
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: ${PROJECT_ROOT}/volumes/logs
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tck8s-iam-tc-iam-secrets
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: ${PROJECT_ROOT}/volumes/secrets
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tck8s-iam-tc-iam-webapps
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: ${PROJECT_ROOT}/volumes/webapps

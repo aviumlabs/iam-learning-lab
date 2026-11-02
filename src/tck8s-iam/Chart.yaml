@@ -4,4 +4,4 @@ description: A Helm chart for Tomcat and Postgres
 type: application
 version: 1.0.0
 appVersion: "1.0.0"
-icon: "tck8s-iam.png"
+icon: https://example.com/tck8s-iam.png
