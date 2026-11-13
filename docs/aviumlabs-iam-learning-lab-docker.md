@@ -134,6 +134,8 @@ Run the following deployment tools script commnads:
 iiqdeptools -b n
 ```
 
+The initial build extracts the database schema files required to configure the database.
+
 **Initial IdentityIQ Environment**
 ```shell
 iiqdeptools.py -c

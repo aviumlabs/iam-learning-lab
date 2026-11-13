@@ -108,7 +108,7 @@ python3 scripts/setup_secrets.py \
 ```
 
 ```shell
-helm install tck8s-iam ./ -f values.yaml -f values-local.yaml --namespace tck8s-iam
+helm install tck8s-iam ./ -f values.yaml -f values-local.yaml -n tck8s-iam
 ```
 
 >  
@@ -121,6 +121,11 @@ helm install tck8s-iam ./ -f values.yaml -f values-local.yaml --namespace tck8s-
 > DESCRIPTION: Install complete  
 > TEST SUITE: None  
 >  
+
+**Apply the ingress controller; one time step:**
+```shell
+kubectl apply -f ingress.yaml
+```
 
 **Check the pods:**
 
@@ -136,27 +141,39 @@ kubectl get pods -n tck8s-iam
 
 When the pods have reached the **Running** state, install IdentityIQ:
 
-```bash
-# Get the application pod name using the new label
+**Set Application Pod Shortcut:**
+```shell
 APP_POD=$(kubectl get pods -n tck8s-iam -l component=app -o jsonpath='{.items[0].metadata.name}')
+```
 
-# Run your command
-kubectl exec $APP_POD -n tck8s-iam -- iiqdeptools.py -c -H tck8s-iam-app-db -P 5432
+**Initial IdentityIQ Cnfiguration**
+```shell
+kubectl exec $APP_POD -n tck8s-iam -- iiqdeptools.py -c -H tck8s-iam-db
+```
+
+**Initial IdentityIQ Build WAR**
+```shell
+kubectl exec $APP_POD -n tck8s-iam -- iiqdeptools.py -b y -H tck8s-iam-db
+```
+
+Run the deployment and extend the Identity Schema:
+```shell
+kubectl exec $APP_POD -n tck8s-iam -- iiqdeptools.py -d y -H tck8s-iam-db
 ```
 
 **View logs**
 ```
-kubectl logs tck8s-iam-57c4b4f78c-r2b7d -n tck8s-iam
+kubectl logs $APP_POD -n tck8s-iam
 ```
 
 **Shell access**
 ```
-kubectl exec -it tck8s-iam-57c4b4f78c-r2b7d -n tck8s-iam -- /bin/ash
+kubectl exec -it $APP_POD -n tck8s-iam -- /bin/ash
 ```
 
 **Describe a pod:**
 ```shell
-kubectl describe pod tck8s-iam-57c4b4f78c-r2b7d -n tck8s-iam
+kubectl describe pod $APP_POD -n tck8s-iam
 ```
 
 **Stop pods:**
@@ -168,14 +185,18 @@ kubectl scale deployment tck8s-iam -n tck8s-iam --replicas=0
 
 **To configure the environment with the new database service:**
 ```bash
-iiqdeptools.py -c -H tck8s-iam-db -P 5432
+iiqdeptools.py -c -H tck8s-iam-db
 ```
 
 **To deploy the environment with the new database service:**
 ```bash
-iiqdeptools.py -d -H tck8s-iam-db -P 5432
+iiqdeptools.py -d -H tck8s-iam-db
 ```
 
+**DNS resolution:**
+```shell
+echo "10.152.183.105 iiq.local" | sudo tee -a /etc/hosts
+```
 
 Reload changed values.yaml:
 ```shell
@@ -193,29 +214,6 @@ Delete the persistent volume claims:
 ```shell
 kubectl delete pvc -n tck8s-iam --all
 ```
-
-Delete the persistent volumes:
-```shell
-kubectl delete pv tck8s-iam-db-data && \
-kubectl delete pv tck8s-iam-tc-iam-backup && \
-kubectl delete pv tck8s-iam-tc-iam-conf && \
-kubectl delete pv tck8s-iam-tc-iam-logs && \
-kubectl delete pv tck8s-iam-tc-iam-secrets && \
-kubectl delete pv tck8s-iam-tc-iam-webapps 
-```
-
-```shell
-export PROJECT_ROOT=/home/mkonrad/Development/source/iam-learning-lab/src/tck8s-iam
-```
-
-```shell
-envsubst < pvs.yaml | kubectl apply -f -
-```
-
-```shell
-helm install tck8s-iam ./ -f values.yaml -f values-local.yaml --namespace tck8s-iam
-```
-
 
 ### Appendix
 
@@ -252,6 +250,20 @@ Specific to the database service:
 kubectl get endpointslice -n tck8s-iam -l app=tck8s-iam-db
 ```
 
+**Check helm image pull policy:**
+List releases:
+```shell
+helm list -A
+```
+
+```shell
+helm get manifest 1.0.0 -n tck8s-iam | grep -A5 -B5 imagePullPolicy
+```
+
+**Run after changing services, helm upgrade is required prior to running this:**
+```shell
+kubectl rollout restart deployment tck8s-iam-app -n tck8s-iam
+```
 
 
 ### A. Logging & Observability                                                                                                                                
@@ -259,3 +271,58 @@ kubectl get endpointslice -n tck8s-iam -l app=tck8s-iam-db
 ity.                                                                                                                                                          
 *   **Improvement:** Standardize on a structured logging format (e.g., JSON) across all scripts to allow for easier log aggregation in a Kubernetes environmen
 t (e.g., via Fluentd or Loki). 
+
+## Archive
+
+### Step 2: Restart the app pod
+
+After running the command, restart the pod:
+
+```bash
+kubectl rollout restart deployment/tck8s-iam-app -n tck8s-iam
+```
+
+### Step 3: Verify
+
+Check the logs to confirm the SailPoint initialization succeeds:
+
+```bash
+kubectl logs -n tck8s-iam -l app=tck8s-iam-app --tail=500
+```
+
+## Quick Verification
+
+You can verify the pod is being selected by checking:
+
+```bash
+# Check that the service selector matches the pod labels
+kubectl get svc tck8s-iam-service -n tck8s-iam -o wide
+
+# Check that the pod has the correct labels
+kubectl get pod -n tck8s-iam -l app=tck8s-iam-app -o wide
+
+# The endpoints should show the pod IP
+kubectl get endpoints tck8s-iam-service -n tck8s-iam -o wide
+```
+
+Delete the persistent volumes:
+```shell
+kubectl delete pv tck8s-iam-db-data && \
+kubectl delete pv tck8s-iam-tc-iam-backup && \
+kubectl delete pv tck8s-iam-tc-iam-conf && \
+kubectl delete pv tck8s-iam-tc-iam-logs && \
+kubectl delete pv tck8s-iam-tc-iam-secrets && \
+kubectl delete pv tck8s-iam-tc-iam-webapps 
+```
+
+```shell
+export PROJECT_ROOT=/home/mkonrad/Development/source/iam-learning-lab/src/tck8s-iam
+```
+
+```shell
+envsubst < pvs.yaml | kubectl apply -f -
+```
+
+```shell
+helm install tck8s-iam ./ -f values.yaml -f values-local.yaml --namespace tck8s-iam
+```
