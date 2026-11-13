@@ -27,6 +27,7 @@ Create a `values-local.yaml` file in the project root. Replace the placeholder p
 cat <<EOF > values-local.yaml
 app:
   ssb_host_path: /home/user/Development/source/iam-learning-lab/src/ssb
+
 project_root: /home/user/Development/source/iam-learning-lab/src/tck8s-iam
 EOF
 ```

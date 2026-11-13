@@ -6,9 +6,9 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: tck8s-iam
+    app: tck8s-iam-app
   ports:
     - name: https
       protocol: TCP
-      port: 8443
+      port: 32443
       targetPort: 8443

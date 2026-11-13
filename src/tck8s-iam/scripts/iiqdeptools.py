@@ -40,7 +40,8 @@ class CommandFailedError(Exception):
 
 
 def setup_pgpass():
-    pgpass_src = os.path.abspath(os.path.join('./.pgpass'))
+    ssb_path = os.environ['SSB_HOME']
+    pgpass_src = os.path.abspath(os.path.join(ssb_path, '.pgpass'))
     pgpass_dest = os.path.abspath(os.path.join(STAGING_DIR, '.pgpass'))
     
     print(f"DEBUG: pgpass_src = {pgpass_src}")
@@ -215,11 +216,11 @@ def main(argv):
                 sys.exit()
         elif command == 'deploy':
             if not command_arg:
-                deploy_iiq(db_host=db_host, db_port=db_port)
+                deploy_iiq()
             elif command_arg.lower() == 'y':
-                deploy_iiq(extend_schema=True, db_host=db_host, db_port=db_port)
+                deploy_iiq(extend_schema=True)
             elif command_arg.lower() == 'n':
-                deploy_iiq(extend_schema=False, db_host=db_host, db_port=db_port)
+                deploy_iiq(extend_schema=False)
             else:
                 print(help_text)
                 sys.exit()
@@ -252,8 +253,6 @@ def config_iiq(db_host: str = 'db', db_port: str = '5432'):
     # a 'clean' if extract/ is already present.
     build_iiq(war=False, db_host=db_host, db_port=db_port)
 
-    #copy_update_iiq_properties(db_host, db_port)
-    
     ssb_home = os.environ['SSB_HOME']
     extract_path = os.path.join(STAGING_DIR, 'build', 'extract', 'WEB-INF', 'database')
     
@@ -343,7 +342,7 @@ def build_iiq(war: bool = True, db_host: str = 'db', db_port: str = '5432'):
         print("IdentityIQ build completed.")
 
 
-def deploy_iiq(extend_schema: bool = False, db_host: str = 'db', db_port: str = '5432'):
+def deploy_iiq(extend_schema: bool = False):
     ssb_home = os.environ['SSB_HOME']
     logger.info("Preparing deployment...")
     print("Preparing deployment...")
@@ -434,9 +433,21 @@ def copy_update_iiq_properties(db_host: str = 'db', db_port: str = '5432'):
     update_log4j2_properties(dest_log4j2_stg)
 
     # 3. target.properties
+    # Always copy target.properties to ensure it exists for the Ant build
     if not os.path.exists(dest_target_stg):
         print(f"  Copying {src_target} to {dest_target_stg}")
         shutil.copyfile(src_target, dest_target_stg)
+    else:
+        print(f"  Updating {dest_target_stg} (already exists)")
+        # Still normalize line endings even if file exists
+        with open(src_target, 'r', encoding='utf-8') as f:
+            content = f.read()
+        with open(dest_target_stg, 'r', encoding='utf-8') as f:
+            dest_content = f.read()
+        if content != dest_content:
+            print(f"  Content differs, normalizing...")
+            with open(dest_target_stg, 'w', encoding='utf-8') as f:
+                f.write(content)
     normalize_line_endings(dest_target_stg)
 
 
@@ -516,7 +527,7 @@ def get_postgresql_url(database: str = 'postgres') -> str:
 
     pg_pass = None
     with open(pg_pass_path, 'r') as f:
-       content = f.read().strip()
+        content = f.read().strip()
         if not pg_pass_path.endswith('.pgpass'):
             pg_pass = content
 
